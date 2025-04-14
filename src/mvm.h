@@ -111,7 +111,7 @@ void mvm_dump(mvm *vm) {
     printf("\n\nmvm\n");
     printf("    stk: sp=0x%x\n", vm->sp);
     printf("    ");
-    for(int i = 0; i < MVM_ARRAYSIZE(vm->stk); i++) {
+    for(int i = 0; i < vm->sp; i++) {
         printf("%08x ", vm->stk[i]);
         if((i + 1) % 16 == 0)
             printf("\n    ");
