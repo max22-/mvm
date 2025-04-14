@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#define mvm_trace(x) \
-    do { \
-        printf(x); \
-        printf("\n"); \
+#define mvm_trace(x)                                                           \
+    do {                                                                       \
+        printf(x);                                                             \
+        printf("\n");                                                          \
     } while(0)
 #define MVM_IMPLEMENTATION
 #include "mvm.h"
@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     }
     const char *rom_path = argv[1];
     FILE *f = fopen(rom_path, "rb");
-    uint8_t *ram = (uint8_t*)malloc(MVM_RAM_SIZE);
+    uint8_t *ram = (uint8_t *)malloc(MVM_RAM_SIZE);
     if(!ram) {
         FATAL("failed to allocate memory");
         return 1;

@@ -5,7 +5,9 @@
 
 #define MVM_RAM_SIZE 0x10000
 #define MVM_INTERRUPT_TABLE_SIZE 0x10
-#define MVM_ENTRY_POINT (MVM_INTERRUPT_TABLE_SIZE * sizeof(uint32_t)) // the entry point is just after the interrupt table
+#define MVM_ENTRY_POINT                                                        \
+    (MVM_INTERRUPT_TABLE_SIZE *                                                \
+     sizeof(uint32_t)) // the entry point is just after the interrupt table
 
 enum mvm_error {
     MVM_NO_ERROR,
@@ -77,7 +79,8 @@ void mvm_run(mvm *vm, uint32_t limit) {
     uint32_t a, b;
     while(limit-- && vm->is_running) {
         uint8_t op = mvm_load8(vm, vm->pc++, &success);
-        if(!success) return;
+        if(!success)
+            return;
         switch(op) {
         case 0: // brk
             mvm_trace("brk");
@@ -86,15 +89,18 @@ void mvm_run(mvm *vm, uint32_t limit) {
         case 1: // lit 8
             mvm_trace("lit8");
             a = mvm_load8(vm, vm->pc++, &success);
-            if(!success) return;
+            if(!success)
+                return;
             mvm_push(vm, a, &success);
             break;
         case 2: // add
             mvm_trace("add");
             b = mvm_pop(vm, b, &success);
-            if(!success) return;
+            if(!success)
+                return;
             a = mvm_pop(vm, b, &success);
-            if(!success) return;
+            if(!success)
+                return;
             mvm_push(vm, a + b, &success);
             break;
         }
@@ -111,7 +117,6 @@ void mvm_dump(mvm *vm) {
             printf("\n    ");
     }
     printf("\n");
-
 }
 
 #endif
