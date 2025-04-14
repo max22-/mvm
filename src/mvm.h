@@ -1,0 +1,118 @@
+#ifndef MVM_H
+#define MVM_H
+
+#include <stdint.h>
+
+#define MVM_RAM_SIZE 0x10000
+#define MVM_INTERRUPT_TABLE_SIZE 0x10
+#define MVM_ENTRY_POINT (MVM_INTERRUPT_TABLE_SIZE * sizeof(uint32_t)) // the entry point is just after the interrupt table
+
+enum mvm_error {
+    MVM_NO_ERROR,
+    MVM_SEGFAULT,
+    MVM_STACK_OVERFLOW,
+    MVM_STACK_UNDERFLOW,
+    MVM_RSTACK_OVERFLOW,
+    MVM_RSTACK_UNDERFLOW,
+};
+
+typedef struct mvm {
+    uint32_t pc, sp, rsp;
+    uint32_t stk[256], rstk[256];
+    uint8_t *ram;
+    uint8_t is_running;
+    enum mvm_error error;
+} mvm;
+
+void mvm_init(mvm *vm, uint8_t *ram);
+void mvm_run(mvm *vm, uint32_t limit);
+void mvm_dump(mvm *vm);
+
+#ifdef MVM_IMPLEMENTATION
+
+#include <string.h>
+
+#define MVM_ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+void mvm_init(mvm *vm, uint8_t *ram) {
+    memset(vm, 0, sizeof(mvm));
+    vm->pc = MVM_ENTRY_POINT;
+    vm->ram = ram;
+    vm->is_running = 1;
+}
+
+uint32_t mvm_load8(mvm *vm, uint32_t addr, uint8_t *success) {
+    if(addr >= MVM_RAM_SIZE) {
+        vm->error = MVM_SEGFAULT;
+        vm->is_running = 0;
+        *success = 0;
+        return 0;
+    }
+    *success = 1;
+    return vm->ram[addr];
+}
+
+void mvm_push(mvm *vm, uint32_t x, uint8_t *success) {
+    if(vm->sp >= MVM_ARRAYSIZE(vm->stk)) {
+        *success = 0;
+        vm->error = MVM_STACK_OVERFLOW;
+        return;
+    }
+    vm->stk[vm->sp++] = x;
+    *success = 1;
+}
+
+uint32_t mvm_pop(mvm *vm, uint32_t x, uint8_t *success) {
+    if(vm->sp == 0) {
+        *success = 0;
+        vm->error = MVM_STACK_UNDERFLOW;
+        return 0;
+    }
+    *success = 1;
+    return vm->stk[--vm->sp];
+}
+
+void mvm_run(mvm *vm, uint32_t limit) {
+    uint8_t success;
+    uint32_t a, b;
+    while(limit-- && vm->is_running) {
+        uint8_t op = mvm_load8(vm, vm->pc++, &success);
+        if(!success) return;
+        switch(op) {
+        case 0: // brk
+            mvm_trace("brk");
+            vm->is_running = 0;
+            break;
+        case 1: // lit 8
+            mvm_trace("lit8");
+            a = mvm_load8(vm, vm->pc++, &success);
+            if(!success) return;
+            mvm_push(vm, a, &success);
+            break;
+        case 2: // add
+            mvm_trace("add");
+            b = mvm_pop(vm, b, &success);
+            if(!success) return;
+            a = mvm_pop(vm, b, &success);
+            if(!success) return;
+            mvm_push(vm, a + b, &success);
+            break;
+        }
+    }
+}
+
+void mvm_dump(mvm *vm) {
+    printf("\n\nmvm\n");
+    printf("    stk: sp=0x%x\n", vm->sp);
+    printf("    ");
+    for(int i = 0; i < MVM_ARRAYSIZE(vm->stk); i++) {
+        printf("%08x ", vm->stk[i]);
+        if((i + 1) % 16 == 0)
+            printf("\n    ");
+    }
+    printf("\n");
+
+}
+
+#endif
+#endif
