@@ -40,6 +40,8 @@ int main(int argc, char *argv[]) {
     mvm vm;
     mvm_init(&vm, ram);
     mvm_run(&vm, 1000);
+    if(vm.error != MVM_NO_ERROR)
+        printf("error: %s\n", mvm_error_name[vm.error]);
     mvm_dump(&vm);
 
     free(ram);

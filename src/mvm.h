@@ -9,14 +9,32 @@
     (MVM_INTERRUPT_TABLE_SIZE *                                                \
      sizeof(uint32_t)) // the entry point is just after the interrupt table
 
+// Generated code start
+
+enum MVM_OPCODE {
+    OP_BRK,
+    OP_LIT_U8,
+    OP_LIT_U16,
+    OP_LIT_U32,
+    OP_ADD,
+    OP_SUB,
+    OP_MUL,
+    OP_DIV,
+};
+
+#warning TODO: split the generated output in multiple parts
+
 enum mvm_error {
     MVM_NO_ERROR,
-    MVM_SEGFAULT,
+    MVM_SEGMENTATION_FAULT,
     MVM_STACK_OVERFLOW,
     MVM_STACK_UNDERFLOW,
-    MVM_RSTACK_OVERFLOW,
-    MVM_RSTACK_UNDERFLOW,
+    MVM_RETURN_STACK_OVERFLOW,
+    MVM_RETURN_STACK_UNDERFLOW,
+    MVM_INVALID_INSTRUCTION,
 };
+
+// Generated code end
 
 typedef struct mvm {
     uint32_t pc, sp, rsp;
@@ -34,6 +52,27 @@ void mvm_dump(mvm *vm);
 
 #include <string.h>
 
+const char *mvm_op_name[] = {
+    "brk",
+    "lit_u8",
+    "lit_u16",
+    "lit_u32",
+    "add",
+    "sub",
+    "mul",
+    "div",
+};
+
+const char *mvm_error_name[] = {
+    "",
+    "segmentation fault",
+    "stack overflow",
+    "stack underflow",
+    "return stack overflow",
+    "return stack underflow",
+    "invalid instruction",
+};
+
 #define MVM_ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 void mvm_init(mvm *vm, uint8_t *ram) {
@@ -45,7 +84,7 @@ void mvm_init(mvm *vm, uint8_t *ram) {
 
 uint32_t mvm_load8(mvm *vm, uint32_t addr, uint8_t *success) {
     if(addr >= MVM_RAM_SIZE) {
-        vm->error = MVM_SEGFAULT;
+        vm->error = MVM_SEGMENTATION_FAULT;
         vm->is_running = 0;
         *success = 0;
         return 0;
@@ -82,16 +121,16 @@ void mvm_run(mvm *vm, uint32_t limit) {
         if(!success)
             return;
         switch(op) {
-        case 0: // brk
+        case OP_BRK: // brk
             vm->is_running = 0;
             break;
-        case 1: // lit 8
+        case OP_LIT_U8: // lit 8
             a = mvm_load8(vm, vm->pc++, &success);
             if(!success)
                 return;
             mvm_push(vm, a, &success);
             break;
-        case 2: // add
+        case OP_ADD: // add
             b = mvm_pop(vm, b, &success);
             if(!success)
                 return;
@@ -100,6 +139,10 @@ void mvm_run(mvm *vm, uint32_t limit) {
                 return;
             mvm_push(vm, a + b, &success);
             break;
+        default:
+            vm->error = MVM_INVALID_INSTRUCTION;
+            vm->is_running = 0;
+            return;
         }
     }
 }
