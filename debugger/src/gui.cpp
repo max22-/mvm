@@ -69,12 +69,12 @@ static void vm_state() {
         return;
     }
     const ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
-    if(ImGui::BeginTable("vm state", 2, flags, ImVec2(200, 0))) {
+    if(ImGui::BeginTable("vm state", 2, flags, ImVec2(300, 0))) {
         TABLE_ROW("pc", "0x%08x", vm.pc);
         TABLE_ROW("sp", "0x%08x", vm.sp);
         TABLE_ROW("rsp", "0x%08x", vm.rsp);
         TABLE_ROW("state", "%s", vm.is_running ? "running" : "halted");
-        TABLE_ROW("error", "%d", vm.error);
+        TABLE_ROW("error", "%s", mvm_error_name[vm.error]);
         ImGui::EndTable();
     }
     if(ImGui::Button("step"))
