@@ -1,11 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#define mvm_trace(x)                                                           \
-    do {                                                                       \
-        printf(x);                                                             \
-        printf("\n");                                                          \
-    } while(0)
 #define MVM_IMPLEMENTATION
 #include "mvm.h"
 #include "util.h"

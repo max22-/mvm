@@ -83,18 +83,15 @@ void mvm_run(mvm *vm, uint32_t limit) {
             return;
         switch(op) {
         case 0: // brk
-            mvm_trace("brk");
             vm->is_running = 0;
             break;
         case 1: // lit 8
-            mvm_trace("lit8");
             a = mvm_load8(vm, vm->pc++, &success);
             if(!success)
                 return;
             mvm_push(vm, a, &success);
             break;
         case 2: // add
-            mvm_trace("add");
             b = mvm_pop(vm, b, &success);
             if(!success)
                 return;
@@ -111,7 +108,7 @@ void mvm_dump(mvm *vm) {
     printf("\n\nmvm\n");
     printf("    stk: sp=0x%x\n", vm->sp);
     printf("    ");
-    for(int i = 0; i < vm->sp; i++) {
+    for(uint32_t i = 0; i < vm->sp; i++) {
         printf("%08x ", vm->stk[i]);
         if((i + 1) % 16 == 0)
             printf("\n    ");
