@@ -9,7 +9,7 @@
     (MVM_INTERRUPT_TABLE_SIZE *                                                \
      sizeof(uint32_t)) // the entry point is just after the interrupt table
 
-// Generated code start
+// Generated enums start
 
 enum MVM_OPCODE {
     OP_BRK,
@@ -22,8 +22,6 @@ enum MVM_OPCODE {
     OP_DIV,
 };
 
-#warning TODO: split the generated output in multiple parts
-
 enum mvm_error {
     MVM_NO_ERROR,
     MVM_SEGMENTATION_FAULT,
@@ -34,7 +32,8 @@ enum mvm_error {
     MVM_INVALID_INSTRUCTION,
 };
 
-// Generated code end
+
+// Generated enums end
 
 typedef struct mvm {
     uint32_t pc, sp, rsp;
@@ -51,6 +50,8 @@ void mvm_dump(mvm *vm);
 #ifdef MVM_IMPLEMENTATION
 
 #include <string.h>
+
+// Generated strings arrays start
 
 const char *mvm_op_name[] = {
     "brk",
@@ -72,6 +73,8 @@ const char *mvm_error_name[] = {
     "return stack underflow",
     "invalid instruction",
 };
+
+// Generated strings arrays end
 
 #define MVM_ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
