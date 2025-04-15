@@ -13,9 +13,9 @@
 
 enum MVM_OPCODE {
     OP_BRK,
-    OP_LIT_U8,
-    OP_LIT_U16,
-    OP_LIT_U32,
+    OP_PUSH_U8,
+    OP_PUSH_U16,
+    OP_PUSH_U32,
     OP_ADD,
     OP_SUB,
     OP_MUL,
@@ -45,6 +45,7 @@ typedef struct mvm {
 
 void mvm_init(mvm *vm, uint8_t *ram);
 void mvm_run(mvm *vm, uint32_t limit);
+int mvm_opcode_from_name(const char *name);
 void mvm_dump(mvm *vm);
 
 #ifdef MVM_IMPLEMENTATION
@@ -55,9 +56,9 @@ void mvm_dump(mvm *vm);
 
 const char *mvm_op_name[] = {
     "brk",
-    "lit_u8",
-    "lit_u16",
-    "lit_u32",
+    "push_u8",
+    "push_u16",
+    "push_u32",
     "add",
     "sub",
     "mul",
@@ -127,7 +128,7 @@ void mvm_run(mvm *vm, uint32_t limit) {
         case OP_BRK: // brk
             vm->is_running = 0;
             break;
-        case OP_LIT_U8: // lit 8
+        case OP_PUSH_U8: // lit 8
             a = mvm_load8(vm, vm->pc++, &success);
             if(!success)
                 return;
@@ -148,6 +149,24 @@ void mvm_run(mvm *vm, uint32_t limit) {
             return;
         }
     }
+}
+
+static int str_eq(const char *s1, const char *s2) {
+    while(*s1 && *s2) {
+        if(*s1 != *s2)
+            return 0;
+        s1++;
+        s2++;
+    }
+    return *s1 == 0 && *s2 == 0;
+}
+
+int mvm_opcode_from_name(const char *name) {
+    for(size_t i = 0; i < MVM_ARRAYSIZE(mvm_op_name); i++) {
+        if(str_eq(name, mvm_op_name[i]))
+            return i;
+    }
+    return -1;
 }
 
 void mvm_dump(mvm *vm) {

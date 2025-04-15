@@ -23,8 +23,10 @@ sv sv_chop_left(sv s, size_t n);
 sv sv_chop_tok(sv s);
 // Returns true if `s` starts with `prefix`
 int sv_starts_with(sv s, sv prefix);
-// Tries to parse a hex number from `s`. Sets `success` accordingly.
+// Tries to parse a hexadecimal number from `s`. Sets `success` accordingly.
 uint32_t sv_u32_hex(sv s, int *success);
+// Tries to parse a decimal number from `s`. Sets `success` accordingly.
+uint32_t sv_u32_dec(sv s, int *success);
 
 
 #ifdef SV_IMPLEMENTATION
@@ -127,6 +129,22 @@ uint32_t sv_u32_hex(sv s, int *success) {
             r += c - 'a' + 0xa;
         } else if(c >= 'A' && c <= 'F') {
             r += c - 'A' + 0xa;
+        } else {
+            *success = 0;
+            return 0;
+        }
+    }
+    *success = 1;
+    return r;
+}
+
+uint32_t sv_u32_dec(sv s, int *success) {
+    uint32_t r = 0;
+    for(size_t i = 0; i < s.len; i++) {
+        r = r * 10;
+        char c = s.data[i];
+        if(c >= '0' && c <= '9') {
+            r += c - '0';
         } else {
             *success = 0;
             return 0;

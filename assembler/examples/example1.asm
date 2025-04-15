@@ -1,5 +1,6 @@
 
-org 40
+org $40
 
-push_u8 4
-push_
+push 4
+push 3
+add

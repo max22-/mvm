@@ -1,8 +1,8 @@
 instructions = [
     "brk",
-    "lit_u8",
-    "lit_u16",
-    "lit_u32",
+    "push_u8",
+    "push_u16",
+    "push_u32",
     "add",
     "sub",
     "mul",

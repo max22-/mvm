@@ -1,4 +1,5 @@
 #include <stdio.h>
+#define MVM_IMPLEMENTATION
 #include <mvm.h>
 #include "assembler.h"
 #define SV_IMPLEMENTATION
@@ -9,19 +10,19 @@ typedef struct assembler {
     const char *file_name;
     const char *source;
     uint8_t *rom;
-    size_t rom_size;
+    size_t rom_capacity;
     int success;
     sv s;
 } assembler;
 
-static assembler assembler_new(const char *file_name, const char *source, uint8_t *rom, size_t rom_size) {
+static assembler assembler_new(const char *file_name, const char *source, uint8_t *rom, size_t rom_capacity) {
     assembler a = {
         .pc = 0,
         .pc_max = 0,
         .file_name = file_name,
         .source = source,
         .rom = rom,
-        .rom_size = rom_size,
+        .rom_capacity = rom_capacity,
         .success = 1,
         .s = sv_from_cstr(source),
     };
@@ -52,7 +53,7 @@ static void set_pc(assembler *a, uint32_t pc) {
 
 static void emit_u8(assembler *a, uint8_t b) {
     if(!a->success) return;
-    if(a->pc >= a->rom_size) {
+    if(a->pc >= a->rom_capacity) {
         assembler_error(a, "trying to write code after rom limit");
         return;
     }
@@ -60,25 +61,75 @@ static void emit_u8(assembler *a, uint8_t b) {
     set_pc(a, a->pc + 1);
 }
 
-
+uint32_t sv_u32(sv s, int *success) {
+    int _success;
+    uint32_t result;
+    if(sv_starts_with(s, sv_from_cstr("$"))) {
+        s = sv_chop_left(s, 1);
+        result = sv_u32_hex(s, &_success);
+        if(!_success) {
+            *success = 0;
+            return 0;
+        }
+    } else {
+        result = sv_u32_dec(s, &_success);
+        if(!_success) {
+            *success = 0;
+            return 0;
+        }
+    }
+    return result;
+}
 
 void org(assembler *a) {
     int success;
     a->s = sv_skipspace(a->s);
     sv sv_addr = sv_tok(a->s);
-    uint32_t addr = sv_u32_hex(sv_addr, &success);
+    uint32_t addr = sv_u32(sv_addr, &success);
     if(!success) {
-        assembler_error(a, "expected hex number");
+        assembler_error(a, "expected number");
         return;
     }
     set_pc(a, addr);
     a->s = sv_chop_tok(a->s);
 }
 
-ssize_t assemble(const char *file_name, const char *source, uint8_t *rom, size_t rom_size) {
+void push(assembler *a) {
+    int success;
+    a->s = sv_skipspace(a->s);
+    sv sv_lit = sv_tok(a->s);
+    uint32_t lit = sv_u32(sv_lit, &success);
+    if(!success) {
+        assembler_error(a, "expected number");
+        return;
+    }
+    if(lit < UINT8_MAX) {
+        emit_u8(a, OP_PUSH_U8);
+        emit_u8(a, (uint8_t)lit);
+    } else if(lit < 65536) {
+        // TODO
+    } else {
+        // TODO
+    }
+    a->s = sv_chop_tok(a->s);
+}
+
+void instruction(assembler *a, sv tok) {
+    const char buf[32];
+    sv_to_cstr(tok, buf, sizeof(buf));
+    int opcode = mvm_opcode_from_name(buf);
+    if(opcode == -1) {
+        assembler_error(a, "unexpected token");
+        return;
+    }
+    emit_u8(a, (uint8_t)opcode);
+    a->s = sv_chop_tok(a->s);
+}
+
+ssize_t assemble(const char *file_name, const char *source, uint8_t *rom, size_t rom_capacity) {
     char buf[1024];
 
-    assembler a = assembler_new(file_name, source, rom, rom_size);
+    assembler a = assembler_new(file_name, source, rom, rom_capacity);
     
     while(!sv_is_empty(a.s) && a.success) {
         a.s = sv_skipspace(a.s);
@@ -86,12 +137,16 @@ ssize_t assemble(const char *file_name, const char *source, uint8_t *rom, size_t
         if(sv_eq(tok, sv_from_cstr("org"))) {
             a.s = sv_chop_tok(a.s);
             org(&a);
-        }
-        else {
-            assembler_error(&a, "unexpected token");
+        } else if(sv_eq(tok, sv_from_cstr("push"))) {
+            a.s = sv_chop_tok(a.s);
+            push(&a);
+        } else {
+            instruction(&a, tok);
         }
     }
 
-    printf("result: pc = %d\n", a.pc);
-    return 0;
+    if(a.success)
+        return a.pc_max;
+    else
+        return -1;
 }

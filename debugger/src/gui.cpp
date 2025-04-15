@@ -109,9 +109,6 @@ static void stack_display(const char *name, const uint32_t *stk, const uint32_t 
 
 static void vm_memory() {
     if(*load_error) return;
-
-    const unsigned int n_columns = 8;
-
     ImGui::Begin("memory");
     stack_display("stack", vm.stk, vm.sp);
     stack_display("return stack", vm.rstk, vm.rsp);
