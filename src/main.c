@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     const long rom_size = ftell(f);
     if(rom_size > MVM_RAM_SIZE) {
         fclose(f);
-        FATAL("rom fil is too big to fit in ram");
+        FATAL("rom file is too big to fit in ram");
         return 1;
     }
     fseek(f, 0, SEEK_SET);
