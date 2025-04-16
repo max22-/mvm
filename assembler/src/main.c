@@ -63,7 +63,10 @@ int main(int argc, char *argv[]) {
 
     printf("assembling...\n");
     size_t bytes_to_write = assemble(source_path, source, rom, MVM_RAM_SIZE);
-    fwrite(rom, bytes_to_write, 1, f);
+    if(bytes_to_write != -1)
+        fwrite(rom, bytes_to_write, 1, f);
+    else
+        rc = 1;
 
     fclose(f);
     
