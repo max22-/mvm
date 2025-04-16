@@ -115,7 +115,7 @@ void push(assembler *a) {
 }
 
 void instruction(assembler *a, sv tok) {
-    const char buf[32];
+    char buf[32];
     sv_to_cstr(tok, buf, sizeof(buf));
     int opcode = mvm_opcode_from_name(buf);
     if(opcode == -1) {
@@ -127,8 +127,6 @@ void instruction(assembler *a, sv tok) {
 }
 
 ssize_t assemble(const char *file_name, const char *source, uint8_t *rom, size_t rom_capacity) {
-    char buf[1024];
-
     assembler a = assembler_new(file_name, source, rom, rom_capacity);
     
     while(!sv_is_empty(a.s) && a.success) {
