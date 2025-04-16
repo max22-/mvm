@@ -9,8 +9,9 @@ instructions = [
     "div",
 ]
 
-errors = [
-    "",
+status = [
+    "running",
+    "halted",
     "segmentation fault",
     "stack overflow",
     "stack underflow",
@@ -33,12 +34,9 @@ emit("    MVM_OPCODE_COUNT,")
 emit("};")
 emit("")
 
-emit("enum mvm_error {")
-for e in errors:
-    if e == "":
-        enum_entry = "NO_ERROR"
-    else:
-        enum_entry = e.replace(" ", "_").upper()
+emit("enum mvm_status {")
+for s in status:
+    enum_entry = s.replace(" ", "_").upper()
     emit(f"    MVM_{enum_entry},")
 emit("};")
 emit("")
@@ -55,8 +53,8 @@ emit("")
 
 
 emit("const char *mvm_error_name[] = {")
-for e in errors:
-    emit(f'    "{e}",')
+for s in status:
+    emit(f'    "{s}",')
 emit("};")
 
 strings_arrays_code = code

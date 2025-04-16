@@ -23,8 +23,9 @@ enum MVM_OPCODE {
     MVM_OPCODE_COUNT,
 };
 
-enum mvm_error {
-    MVM_NO_ERROR,
+enum mvm_status {
+    MVM_RUNNING,
+    MVM_HALTED,
     MVM_SEGMENTATION_FAULT,
     MVM_STACK_OVERFLOW,
     MVM_STACK_UNDERFLOW,
@@ -41,8 +42,7 @@ typedef struct mvm {
     uint32_t pc, sp, rsp;
     uint32_t stk[256], rstk[256];
     uint8_t *ram;
-    uint8_t is_running;
-    enum mvm_error error;
+    enum mvm_status status;
 } mvm;
 
 void mvm_init(mvm *vm, uint8_t *ram);
@@ -69,7 +69,8 @@ const char *mvm_op_name[] = {
 };
 
 const char *mvm_error_name[] = {
-    "",
+    "running",
+    "halted",
     "segmentation fault",
     "stack overflow",
     "stack underflow",
@@ -87,13 +88,12 @@ void mvm_init(mvm *vm, uint8_t *ram) {
     memset(vm, 0, sizeof(mvm));
     vm->pc = MVM_ENTRY_POINT;
     vm->ram = ram;
-    vm->is_running = 1;
+    vm->status = MVM_RUNNING;
 }
 
 uint32_t mvm_load8(mvm *vm, uint32_t addr, uint8_t *success) {
     if(addr >= MVM_RAM_SIZE) {
-        vm->error = MVM_SEGMENTATION_FAULT;
-        vm->is_running = 0;
+        vm->status = MVM_SEGMENTATION_FAULT;
         *success = 0;
         return 0;
     }
@@ -104,7 +104,7 @@ uint32_t mvm_load8(mvm *vm, uint32_t addr, uint8_t *success) {
 void mvm_push(mvm *vm, uint32_t x, uint8_t *success) {
     if(vm->sp >= MVM_ARRAYSIZE(vm->stk)) {
         *success = 0;
-        vm->error = MVM_STACK_OVERFLOW;
+        vm->status = MVM_STACK_OVERFLOW;
         return;
     }
     vm->stk[vm->sp++] = x;
@@ -114,7 +114,7 @@ void mvm_push(mvm *vm, uint32_t x, uint8_t *success) {
 uint32_t mvm_pop(mvm *vm, uint32_t x, uint8_t *success) {
     if(vm->sp == 0) {
         *success = 0;
-        vm->error = MVM_STACK_UNDERFLOW;
+        vm->status = MVM_STACK_UNDERFLOW;
         return 0;
     }
     *success = 1;
@@ -138,13 +138,13 @@ uint32_t mvm_pop(mvm *vm, uint32_t x, uint8_t *success) {
 void mvm_run(mvm *vm, uint32_t limit) {
     uint8_t success;
     uint32_t a, b;
-    while(limit-- && vm->is_running) {
+    while(limit-- && vm->status == MVM_RUNNING) {
         uint8_t op = mvm_load8(vm, vm->pc++, &success);
         if(!success)
             return;
         switch(op) {
         case OP_BRK:
-            vm->is_running = 0;
+            vm->status = MVM_HALTED;
             break;
         case OP_PUSH_U8:
             a = mvm_load_u8(vm, vm->pc, &success);
@@ -179,14 +179,12 @@ void mvm_run(mvm *vm, uint32_t limit) {
         case OP_DIV:
             MVM_BINOP_CHECKED(/,
                 if(b == 0) {
-                    vm->error = MVM_DIVISION_BY_ZERO;
-                    vm->is_running = 0;
+                    vm->status = MVM_DIVISION_BY_ZERO;
                     return;
                 }
             );
         default:
-            vm->error = MVM_INVALID_INSTRUCTION;
-            vm->is_running = 0;
+            vm->status = MVM_INVALID_INSTRUCTION;
             return;
         }
     }
