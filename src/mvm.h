@@ -185,19 +185,6 @@ uint32_t mvm_rpop(mvm *vm, uint8_t *success) {
     return vm->rstk[--vm->rsp];
 }
 
-#define MVM_BINOP_CHECKED(binop, type_prefix, type, check) \
-    do { \
-        type_prefix##b = MVM_BITCAST(type, mvm_pop(vm, &success));   \
-        if(!success)    \
-            return; \
-        type_prefix##a = MVM_BITCAST(type, mvm_pop(vm, &success));   \
-        if(!success)    \
-            return; \
-        check \
-        type_prefix##c = type_prefix##a binop type_prefix##b; \
-        mvm_push(vm, MVM_BITCAST(uint32_t, type_prefix##c), &success); \
-    } while(0)
-
 #define MVM_BINOP_UNSIGNED(binop, block) \
     do { \
         ub = mvm_pop(vm, &success);   \
