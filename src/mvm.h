@@ -205,6 +205,7 @@ void mvm_run(mvm *vm, uint32_t limit) {
                     return;
                 }
             );
+            break;
         default:
             vm->status = MVM_INVALID_INSTRUCTION;
             return;
