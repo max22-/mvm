@@ -81,7 +81,7 @@ static void emit32(assembler *a, uint32_t w) {
     set_pc(a, a->pc + 4);
 }
 
-uint32_t sv_u32(sv s, int *success) {
+uint32_t sv_int(sv s, int *success) {
     int _success;
     uint32_t result;
     if(sv_starts_with(s, sv_from_cstr("$"))) {
@@ -92,10 +92,19 @@ uint32_t sv_u32(sv s, int *success) {
             return 0;
         }
     } else {
+        int sign = 1;
+        if(sv_starts_with(s, sv_from_cstr("-"))) {
+            sign = -1;
+            s = sv_chop_left(s, 1);
+        }
         result = sv_u32_dec(s, &_success);
         if(!_success) {
             *success = 0;
             return 0;
+        }
+        if(sign == -1) {
+            int32_t signed_result = -result;
+            result = MVM_BITCAST(uint32_t, signed_result);
         }
     }
     return result;
@@ -105,7 +114,7 @@ void org(assembler *a) {
     int success;
     a->s = sv_skipspace(a->s);
     sv sv_addr = sv_tok(a->s);
-    uint32_t addr = sv_u32(sv_addr, &success);
+    uint32_t addr = sv_int(sv_addr, &success);
     if(!success) {
         assembler_error(a, "expected number");
         return;
@@ -118,7 +127,7 @@ void push(assembler *a) {
     int success;
     a->s = sv_skipspace(a->s);
     sv sv_lit = sv_tok(a->s);
-    uint32_t lit = sv_u32(sv_lit, &success);
+    uint32_t lit = sv_int(sv_lit, &success);
     if(!success) {
         assembler_error(a, "expected number");
         return;
