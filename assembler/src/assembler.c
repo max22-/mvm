@@ -51,7 +51,7 @@ static void set_pc(assembler *a, uint32_t pc) {
         a->pc_max = pc;
 }
 
-static void emit_u8(assembler *a, uint8_t b) {
+static void emit8(assembler *a, uint8_t b) {
     if(!a->success) return;
     if(a->pc >= a->rom_capacity) {
         assembler_error(a, "trying to write code after rom limit");
@@ -59,6 +59,26 @@ static void emit_u8(assembler *a, uint8_t b) {
     }
     a->rom[a->pc] = b;
     set_pc(a, a->pc + 1);
+}
+
+static void emit16(assembler *a, uint16_t h) {
+    if(!a->success) return;
+    if(a->pc >= a->rom_capacity - 1) {
+        assembler_error(a, "trying to write code after rom limit");
+        return;
+    }
+    *(uint16_t*)&a->rom[a->pc] = h;
+    set_pc(a, a->pc + 2);
+}
+
+static void emit32(assembler *a, uint32_t w) {
+    if(!a->success) return;
+    if(a->pc >= a->rom_capacity - 3) {
+        assembler_error(a, "trying to write code after rom limit");
+        return;
+    }
+    *(uint16_t*)&a->rom[a->pc] = w;
+    set_pc(a, a->pc + 4);
 }
 
 uint32_t sv_u32(sv s, int *success) {
@@ -104,12 +124,14 @@ void push(assembler *a) {
         return;
     }
     if(lit < UINT8_MAX) {
-        emit_u8(a, OP_PUSH_U8);
-        emit_u8(a, (uint8_t)lit);
+        emit8(a, OP_PUSH_U8);
+        emit8(a, lit);
     } else if(lit < 65536) {
-        // TODO
+        emit8(a, OP_PUSH_U16);
+        emit16(a, lit);
     } else {
-        // TODO
+        emit8(a, OP_PUSH32);
+        emit32(a, lit);
     }
     a->s = sv_chop_tok(a->s);
 }
@@ -122,7 +144,7 @@ void instruction(assembler *a, sv tok) {
         assembler_error(a, "unexpected token");
         return;
     }
-    emit_u8(a, (uint8_t)opcode);
+    emit8(a, (uint8_t)opcode);
     a->s = sv_chop_tok(a->s);
 }
 

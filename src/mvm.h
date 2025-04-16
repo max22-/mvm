@@ -15,7 +15,7 @@ enum MVM_OPCODE {
     OP_BRK,
     OP_PUSH_U8,
     OP_PUSH_U16,
-    OP_PUSH_U32,
+    OP_PUSH32,
     OP_ADD,
     OP_SUB,
     OP_MUL,
@@ -31,6 +31,7 @@ enum mvm_error {
     MVM_RETURN_STACK_OVERFLOW,
     MVM_RETURN_STACK_UNDERFLOW,
     MVM_INVALID_INSTRUCTION,
+    MVM_DIVISION_BY_ZERO,
 };
 
 
@@ -60,7 +61,7 @@ const char *mvm_op_name[] = {
     "brk",
     "push_u8",
     "push_u16",
-    "push_u32",
+    "push32",
     "add",
     "sub",
     "mul",
@@ -75,6 +76,7 @@ const char *mvm_error_name[] = {
     "return stack overflow",
     "return stack underflow",
     "invalid instruction",
+    "division by zero",
 };
 
 // Generated strings arrays end
@@ -119,6 +121,20 @@ uint32_t mvm_pop(mvm *vm, uint32_t x, uint8_t *success) {
     return vm->stk[--vm->sp];
 }
 
+#define MVM_BINOP_CHECKED(binop, check) \
+    do { \
+        b = mvm_pop(vm, b, &success);   \
+        if(!success)    \
+            return; \
+        a = mvm_pop(vm, b, &success);   \
+        if(!success)    \
+            return; \
+        check \
+        mvm_push(vm, a binop b, &success); \
+    } while(0)
+
+#define MVM_BINOP(binop) MVM_BINOP_CHECKED(binop, /* dummy arg */)
+
 void mvm_run(mvm *vm, uint32_t limit) {
     uint8_t success;
     uint32_t a, b;
@@ -127,24 +143,47 @@ void mvm_run(mvm *vm, uint32_t limit) {
         if(!success)
             return;
         switch(op) {
-        case OP_BRK: // brk
+        case OP_BRK:
             vm->is_running = 0;
             break;
-        case OP_PUSH_U8: // lit 8
-            a = mvm_load8(vm, vm->pc++, &success);
+        case OP_PUSH_U8:
+            a = mvm_load_u8(vm, vm->pc, &success);
             if(!success)
                 return;
+            vm->pc++;
             mvm_push(vm, a, &success);
             break;
-        case OP_ADD: // add
-            b = mvm_pop(vm, b, &success);
+        case OP_PUSH_U16:
+            a = mvm_load_u16(vm, vm->pc, &success);
             if(!success)
                 return;
-            a = mvm_pop(vm, b, &success);
-            if(!success)
-                return;
-            mvm_push(vm, a + b, &success);
+            vm->pc += 2;
+            mvm_push(vm, a, &success);
             break;
+        case OP_PUSH32:
+            a = mvm_load32(vm, vm->pc, &success);
+            if(!success)
+                return;
+            vm->pc += 4;
+            mvm_push(vm, a, &success);
+            break;
+        case OP_ADD:
+            MVM_BINOP(+);
+            break;
+        case OP_SUB:
+            MVM_BINOP(-);
+            break;
+        case OP_MUL:
+            MVM_BINOP(*);
+            break;
+        case OP_DIV:
+            MVM_BINOP_CHECKED(/,
+                if(b == 0) {
+                    vm->error = MVM_DIVISION_BY_ZERO;
+                    vm->is_running = 0;
+                    return;
+                }
+            );
         default:
             vm->error = MVM_INVALID_INSTRUCTION;
             vm->is_running = 0;

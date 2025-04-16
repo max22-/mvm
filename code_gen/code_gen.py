@@ -2,7 +2,7 @@ instructions = [
     "brk",
     "push_u8",
     "push_u16",
-    "push_u32",
+    "push32",
     "add",
     "sub",
     "mul",
@@ -17,6 +17,7 @@ errors = [
     "return stack overflow",
     "return stack underflow",
     "invalid instruction",
+    "division by zero"
 ]
 
 code = ""
