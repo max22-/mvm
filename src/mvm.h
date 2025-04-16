@@ -20,6 +20,7 @@ enum MVM_OPCODE {
     OP_SUB,
     OP_MUL,
     OP_DIV,
+    MVM_OPCODE_COUNT,
 };
 
 enum mvm_error {
@@ -46,6 +47,7 @@ typedef struct mvm {
 void mvm_init(mvm *vm, uint8_t *ram);
 void mvm_run(mvm *vm, uint32_t limit);
 int mvm_opcode_from_name(const char *name);
+const char *mvm_current_instruction_name(mvm *vm);
 void mvm_dump(mvm *vm);
 
 #ifdef MVM_IMPLEMENTATION
@@ -167,6 +169,15 @@ int mvm_opcode_from_name(const char *name) {
             return i;
     }
     return -1;
+}
+
+const char *mvm_current_instruction_name(mvm *vm) {
+    if(vm->pc < MVM_RAM_SIZE) {
+        uint8_t op = vm->ram[vm->pc];
+        if(op < MVM_OPCODE_COUNT)
+            return mvm_op_name[op];
+    }
+    return "";
 }
 
 void mvm_dump(mvm *vm) {

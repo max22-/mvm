@@ -28,6 +28,7 @@ def emit(x):
 emit("enum MVM_OPCODE {")
 for i in instructions:
     emit(f"    OP_{i.upper()},")
+emit("    MVM_OPCODE_COUNT,")
 emit("};")
 emit("")
 

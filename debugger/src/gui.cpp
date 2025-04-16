@@ -71,6 +71,7 @@ static void vm_state() {
     const ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
     if(ImGui::BeginTable("vm state", 2, flags, ImVec2(300, 0))) {
         TABLE_ROW("pc", "0x%08x", vm.pc);
+        TABLE_ROW("instruction", "%s", mvm_current_instruction_name(&vm));
         TABLE_ROW("sp", "0x%08x", vm.sp);
         TABLE_ROW("rsp", "0x%08x", vm.rsp);
         TABLE_ROW("state", "%s", vm.is_running ? "running" : "halted");
