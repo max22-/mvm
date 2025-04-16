@@ -53,7 +53,7 @@ static void set_pc(assembler *a, uint32_t pc) {
 
 static void emit8(assembler *a, uint8_t b) {
     if(!a->success) return;
-    if(a->pc >= a->rom_capacity) {
+    if(a->pc > a->rom_capacity - sizeof(uint8_t)) {
         assembler_error(a, "trying to write code after rom limit");
         return;
     }
@@ -63,21 +63,21 @@ static void emit8(assembler *a, uint8_t b) {
 
 static void emit16(assembler *a, uint16_t h) {
     if(!a->success) return;
-    if(a->pc >= a->rom_capacity - 1) {
+    if(a->pc > a->rom_capacity - sizeof(uint16_t)) {
         assembler_error(a, "trying to write code after rom limit");
         return;
     }
-    *(uint16_t*)&a->rom[a->pc] = h;
+    MVM_BITCAST(uint16_t, a->rom[a->pc]) = h;
     set_pc(a, a->pc + 2);
 }
 
 static void emit32(assembler *a, uint32_t w) {
     if(!a->success) return;
-    if(a->pc >= a->rom_capacity - 3) {
+    if(a->pc > a->rom_capacity - sizeof(uint32_t)) {
         assembler_error(a, "trying to write code after rom limit");
         return;
     }
-    *(uint16_t*)&a->rom[a->pc] = w;
+    MVM_BITCAST(uint32_t, a->rom[a->pc]) = w;
     set_pc(a, a->pc + 4);
 }
 

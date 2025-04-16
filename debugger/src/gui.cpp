@@ -74,8 +74,7 @@ static void vm_state() {
         TABLE_ROW("instruction", "%s", mvm_current_instruction_name(&vm));
         TABLE_ROW("sp", "0x%08x", vm.sp);
         TABLE_ROW("rsp", "0x%08x", vm.rsp);
-        TABLE_ROW("state", "%s", vm.is_running ? "running" : "halted");
-        TABLE_ROW("error", "%s", mvm_error_name[vm.error]);
+        TABLE_ROW("status", "%s", mvm_status_name[vm.status]);
         ImGui::EndTable();
     }
     if(ImGui::Button("step"))

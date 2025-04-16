@@ -68,7 +68,7 @@ const char *mvm_op_name[] = {
     "div",
 };
 
-const char *mvm_error_name[] = {
+const char *mvm_status_name[] = {
     "running",
     "halted",
     "segmentation fault",
@@ -91,14 +91,36 @@ void mvm_init(mvm *vm, uint8_t *ram) {
     vm->status = MVM_RUNNING;
 }
 
-uint32_t mvm_load8(mvm *vm, uint32_t addr, uint8_t *success) {
-    if(addr >= MVM_RAM_SIZE) {
+#define MVM_BITCAST(t, x) (*(t*)(&(x)))
+
+uint32_t mvm_load_u8(mvm *vm, uint32_t addr, uint8_t *success) {
+    if(addr > MVM_RAM_SIZE - sizeof(uint8_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
         *success = 0;
         return 0;
     }
     *success = 1;
     return vm->ram[addr];
+}
+
+uint32_t mvm_load_u16(mvm *vm, uint32_t addr, uint8_t *success) {
+    if(addr > MVM_RAM_SIZE - sizeof(uint16_t)) {
+        vm->status = MVM_SEGMENTATION_FAULT;
+        *success = 0;
+        return 0;
+    }
+    *success = 1;
+    return MVM_BITCAST(uint16_t, vm->ram[addr]);
+}
+
+uint32_t mvm_load32(mvm *vm, uint32_t addr, uint8_t *success) {
+    if(addr > MVM_RAM_SIZE - sizeof(uint32_t)) {
+        vm->status = MVM_SEGMENTATION_FAULT;
+        *success = 0;
+        return 0;
+    }
+    *success = 1;
+    return MVM_BITCAST(uint32_t, vm->ram[addr]);
 }
 
 void mvm_push(mvm *vm, uint32_t x, uint8_t *success) {
@@ -139,7 +161,7 @@ void mvm_run(mvm *vm, uint32_t limit) {
     uint8_t success;
     uint32_t a, b;
     while(limit-- && vm->status == MVM_RUNNING) {
-        uint8_t op = mvm_load8(vm, vm->pc++, &success);
+        uint8_t op = mvm_load_u8(vm, vm->pc++, &success);
         if(!success)
             return;
         switch(op) {

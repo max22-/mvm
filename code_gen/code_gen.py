@@ -52,7 +52,7 @@ emit("};")
 emit("")
 
 
-emit("const char *mvm_error_name[] = {")
+emit("const char *mvm_status_name[] = {")
 for s in status:
     emit(f'    "{s}",')
 emit("};")
