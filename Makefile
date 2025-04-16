@@ -23,5 +23,7 @@ run: bin/$(EXE)
 
 clean:
 	rm -rf bin build
+	make -C assembler clean
+	make -C debugger clean
 
 -include $(DEPS)
