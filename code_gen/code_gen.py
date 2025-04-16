@@ -3,6 +3,7 @@ instructions = [
     "push_u8",
     "push_u16",
     "push32",
+    "dup",
     "add",
     "sub",
     "mul",
@@ -14,6 +15,9 @@ instructions = [
     "gte",
     "ltu",
     "gteu",
+    "jmp",
+    "call",
+    "ret",
 ]
 
 status = [

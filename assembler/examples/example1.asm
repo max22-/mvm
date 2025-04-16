@@ -1,10 +1,18 @@
 
 org $40
 
-push -4
-push 2
-div
-push 5
-add
-push 5 lt
+:start
+    push 2
+    ,square call
+    push 1
+    ,inc call
+    add
 brk
+
+:inc
+    push 1
+    add
+    ret
+
+:square
+    dup mul ret

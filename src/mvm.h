@@ -16,6 +16,7 @@ enum MVM_OPCODE {
     OP_PUSH_U8,
     OP_PUSH_U16,
     OP_PUSH32,
+    OP_DUP,
     OP_ADD,
     OP_SUB,
     OP_MUL,
@@ -27,6 +28,9 @@ enum MVM_OPCODE {
     OP_GTE,
     OP_LTU,
     OP_GTEU,
+    OP_JMP,
+    OP_CALL,
+    OP_RET,
     MVM_OPCODE_COUNT,
 };
 
@@ -69,6 +73,7 @@ const char *mvm_op_name[] = {
     "push_u8",
     "push_u16",
     "push32",
+    "dup",
     "add",
     "sub",
     "mul",
@@ -80,6 +85,9 @@ const char *mvm_op_name[] = {
     "gte",
     "ltu",
     "gteu",
+    "jmp",
+    "call",
+    "ret",
 };
 
 const char *mvm_status_name[] = {
@@ -157,6 +165,26 @@ uint32_t mvm_pop(mvm *vm, uint8_t *success) {
     return vm->stk[--vm->sp];
 }
 
+void mvm_rpush(mvm *vm, uint32_t x, uint8_t *success) {
+    if(vm->rsp >= MVM_ARRAYSIZE(vm->rstk)) {
+        *success = 0;
+        vm->status = MVM_RETURN_STACK_OVERFLOW;
+        return;
+    }
+    vm->rstk[vm->rsp++] = x;
+    *success = 1;
+}
+
+uint32_t mvm_rpop(mvm *vm, uint8_t *success) {
+    if(vm->rsp == 0) {
+        *success = 0;
+        vm->status = MVM_RETURN_STACK_UNDERFLOW;
+        return 0;
+    }
+    *success = 1;
+    return vm->rstk[--vm->rsp];
+}
+
 #define MVM_BINOP_CHECKED(binop, type_prefix, type, check) \
     do { \
         type_prefix##b = MVM_BITCAST(type, mvm_pop(vm, &success));   \
@@ -231,6 +259,15 @@ void mvm_run(mvm *vm, uint32_t limit) {
             vm->pc += sizeof(uint32_t);
             mvm_push(vm, ua, &success);
             break;
+        case OP_DUP:
+            ua = mvm_pop(vm, &success);
+            if(!success)
+                return;
+            mvm_push(vm, ua, &success);
+            if(!success)
+                return;
+            mvm_push(vm, ua, &success);
+            break;
         case OP_ADD:
             MVM_BINOP_UNSIGNED(+, {});
             break;
@@ -273,6 +310,25 @@ void mvm_run(mvm *vm, uint32_t limit) {
             break;
         case OP_GTEU:
             MVM_BINOP_UNSIGNED(>=, {});
+            break;
+        case OP_JMP:
+            ua = mvm_pop(vm, &success);
+            if(!success)
+                return;
+            vm->pc = ua;
+            break;
+        case OP_CALL:
+            ua = mvm_pop(vm, &success);
+            if(!success)
+                return;
+            mvm_rpush(vm, vm->pc, &success);
+            vm->pc = ua;
+            break;
+        case OP_RET:
+            ua = mvm_rpop(vm, &success);
+            if(!success)
+                return;
+            vm->pc = ua;
             break;
         default:
             vm->status = MVM_INVALID_INSTRUCTION;

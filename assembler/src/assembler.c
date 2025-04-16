@@ -5,6 +5,13 @@
 #define SV_IMPLEMENTATION
 #include "sv.h"
 
+#define MAX_LABEL_COUNT 1024
+
+typedef struct label {
+    sv name;
+    uint32_t addr;
+} label;
+
 typedef struct assembler {
     uint32_t pc, pc_max;
     const char *file_name;
@@ -13,6 +20,9 @@ typedef struct assembler {
     size_t rom_capacity;
     int success;
     sv s;
+    label labels[MAX_LABEL_COUNT];
+    size_t label_counter;
+    uint8_t pass_number;
 } assembler;
 
 static assembler assembler_new(const char *file_name, const char *source, uint8_t *rom, size_t rom_capacity) {
@@ -25,6 +35,8 @@ static assembler assembler_new(const char *file_name, const char *source, uint8_
         .rom_capacity = rom_capacity,
         .success = 1,
         .s = sv_from_cstr(source),
+        .label_counter = 0,
+        .pass_number = 0,
     };
     return a;
 }
@@ -58,7 +70,7 @@ static void emit8(assembler *a, uint8_t b) {
         return;
     }
     a->rom[a->pc] = b;
-    set_pc(a, a->pc + 1);
+    set_pc(a, a->pc + sizeof(uint8_t));
 }
 
 static void emit16(assembler *a, uint16_t h) {
@@ -68,7 +80,7 @@ static void emit16(assembler *a, uint16_t h) {
         return;
     }
     MVM_BITCAST(uint16_t, a->rom[a->pc]) = h;
-    set_pc(a, a->pc + 2);
+    set_pc(a, a->pc + sizeof(uint16_t));
 }
 
 static void emit32(assembler *a, uint32_t w) {
@@ -78,7 +90,7 @@ static void emit32(assembler *a, uint32_t w) {
         return;
     }
     MVM_BITCAST(uint32_t, a->rom[a->pc]) = w;
-    set_pc(a, a->pc + 4);
+    set_pc(a, a->pc + sizeof(uint32_t));
 }
 
 uint32_t sv_int(sv s, int *success) {
@@ -123,7 +135,20 @@ void org(assembler *a) {
     a->s = sv_chop_tok(a->s);
 }
 
-void push(assembler *a) {
+void push(assembler *a, uint32_t n) {
+    if(n < UINT8_MAX) {
+        emit8(a, OP_PUSH_U8);
+        emit8(a, n);
+    } else if(n < 65536) {
+        emit8(a, OP_PUSH_U16);
+        emit16(a, n);
+    } else {
+        emit8(a, OP_PUSH32);
+        emit32(a, n);
+    }
+}
+
+void push_instruction(assembler *a) {
     int success;
     a->s = sv_skipspace(a->s);
     sv sv_lit = sv_tok(a->s);
@@ -132,16 +157,9 @@ void push(assembler *a) {
         assembler_error(a, "expected number");
         return;
     }
-    if(lit < UINT8_MAX) {
-        emit8(a, OP_PUSH_U8);
-        emit8(a, lit);
-    } else if(lit < 65536) {
-        emit8(a, OP_PUSH_U16);
-        emit16(a, lit);
-    } else {
-        emit8(a, OP_PUSH32);
-        emit32(a, lit);
-    }
+    push(a, lit);
+    if(!a->success)
+        return;
     a->s = sv_chop_tok(a->s);
 }
 
@@ -157,22 +175,83 @@ void instruction(assembler *a, sv tok) {
     a->s = sv_chop_tok(a->s);
 }
 
+void make_label(assembler *a, sv tok) {
+    if(a->pass_number == 0) {
+        if(a->label_counter >= MAX_LABEL_COUNT) {
+            assembler_error(a, "label limit exceeded");
+            return;
+        }
+        tok = sv_chop_left(tok, 1);
+        if(tok.len == 0)
+            assembler_error(a, "invalid label");
+        
+        a->labels[a->label_counter].name = tok;
+        a->labels[a->label_counter].addr = a->pc;
+        a->label_counter++;
+    }
+    a->s = sv_chop_tok(a->s);
+}
+
+uint32_t label_lookup(assembler *a, sv name, int *success) {
+    for(size_t i = 0; i < a->label_counter; i++) {
+        if(sv_eq(a->labels[i].name, name)) {
+            *success = 1;
+            return a->labels[i].addr;
+        }
+    }
+    if(a->pass_number == 0)
+        *success = 1;
+    else
+        *success = 0;
+    return 0;
+}
+
+void push_label(assembler *a, sv name) {
+    int success;
+    name = sv_chop_left(name, 1);
+    uint32_t addr = label_lookup(a, name, &success);
+
+    if(!success) {
+        assembler_error(a, "label not found");
+        return;
+    }
+    push(a, addr);
+    a->s = sv_chop_tok(a->s);
+}
+
+void assembler_pass(assembler *a) {
+    while(!sv_is_empty(a->s) && a->success) {
+        a->s = sv_skipspace(a->s);
+        sv tok = sv_tok(a->s);
+        if(sv_eq(tok, sv_from_cstr("org"))) {
+            a->s = sv_chop_tok(a->s);
+            org(a);
+        } else if(sv_eq(tok, sv_from_cstr("push"))) {
+            a->s = sv_chop_tok(a->s);
+            push_instruction(a);
+        } else if(sv_starts_with(tok, sv_from_cstr(":"))) {
+            make_label(a, tok);
+        } else if(sv_starts_with(tok, sv_from_cstr(","))) {
+            push_label(a, tok);
+        } else {
+            instruction(a, tok);
+        }
+    }
+}
+
 ssize_t assemble(const char *file_name, const char *source, uint8_t *rom, size_t rom_capacity) {
     assembler a = assembler_new(file_name, source, rom, rom_capacity);
     
-    while(!sv_is_empty(a.s) && a.success) {
-        a.s = sv_skipspace(a.s);
-        sv tok = sv_tok(a.s);
-        if(sv_eq(tok, sv_from_cstr("org"))) {
-            a.s = sv_chop_tok(a.s);
-            org(&a);
-        } else if(sv_eq(tok, sv_from_cstr("push"))) {
-            a.s = sv_chop_tok(a.s);
-            push(&a);
-        } else {
-            instruction(&a, tok);
-        }
-    }
+    assembler_pass(&a);
+    if(!a.success)
+        return -1;
+    a.pc = 0;
+    a.s = sv_from_cstr(source);
+    a.pass_number = 1;
+
+    assembler_pass(&a);
+
+    printf("%lu labels\n", a.label_counter);
 
     if(a.success)
         return a.pc_max;
