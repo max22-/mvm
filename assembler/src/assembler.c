@@ -215,7 +215,8 @@ void push_label(assembler *a, sv name) {
         assembler_error(a, "label not found");
         return;
     }
-    push(a, addr);
+    emit8(a, OP_PUSH32); // we have to do a PUSH32 because we don't know the size of the address in the first pass
+    emit32(a, addr);
     a->s = sv_chop_tok(a->s);
 }
 

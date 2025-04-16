@@ -104,7 +104,28 @@ static void stack_display(const char *name, const uint32_t *stk, const uint32_t 
             }
         }
     }
+}
 
+static void ram_display() {
+    const unsigned int n_columns = 16;
+    const uint32_t bytes_to_display = 256;
+    if(ImGui::CollapsingHeader("ram", ImGuiTreeNodeFlags_DefaultOpen)) {
+        const ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
+        if(ImGui::BeginTable("ram", n_columns, flags)) {
+            ImGui::TableNextRow();
+            for(uint32_t i = 0; i < bytes_to_display; i++) {
+                ImGui::TableNextColumn();
+                if(vm.pc == i)
+                    ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "0x%02x", vm.ram[i]);
+                else
+                    ImGui::Text("0x%02x", vm.ram[i]);
+                if((i + 1) % n_columns == 0)
+                    ImGui::TableNextRow();
+
+            }
+            ImGui::EndTable();
+        }
+    }
 }
 
 static void vm_memory() {
@@ -112,6 +133,7 @@ static void vm_memory() {
     ImGui::Begin("memory");
     stack_display("stack", vm.stk, vm.sp);
     stack_display("return stack", vm.rstk, vm.rsp);
+    ram_display();
     ImGui::End();
 }
 

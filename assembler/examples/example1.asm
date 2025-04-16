@@ -14,5 +14,7 @@ brk
     add
     ret
 
+org $100
+
 :square
     dup mul ret
