@@ -46,7 +46,6 @@ enum mvm_status {
     MVM_DIVISION_BY_ZERO,
 };
 
-
 // Generated enums end
 
 typedef struct mvm {
@@ -113,7 +112,7 @@ void mvm_init(mvm *vm, uint8_t *ram) {
     vm->status = MVM_RUNNING;
 }
 
-#define MVM_BITCAST(t, x) (*(t*)(&(x)))
+#define MVM_BITCAST(t, x) (*(t *)(&(x)))
 
 uint32_t mvm_load_u8(mvm *vm, uint32_t addr, uint8_t *success) {
     if(addr > MVM_RAM_SIZE - sizeof(uint8_t)) {
@@ -185,32 +184,30 @@ uint32_t mvm_rpop(mvm *vm, uint8_t *success) {
     return vm->rstk[--vm->rsp];
 }
 
-#define MVM_BINOP_UNSIGNED(binop, block) \
-    do { \
-        ub = mvm_pop(vm, &success);   \
-        if(!success)    \
-            return; \
-        ua = mvm_pop(vm, &success);   \
-        if(!success)    \
-            return; \
-        block \
-        mvm_push(vm, ua binop ub, &success); \
+#define MVM_BINOP_UNSIGNED(binop, block)                                       \
+    do {                                                                       \
+        ub = mvm_pop(vm, &success);                                            \
+        if(!success)                                                           \
+            return;                                                            \
+        ua = mvm_pop(vm, &success);                                            \
+        if(!success)                                                           \
+            return;                                                            \
+        block mvm_push(vm, ua binop ub, &success);                             \
     } while(0)
 
-#define MVM_BINOP_SIGNED(binop, block) \
-    do { \
-        ub = mvm_pop(vm, &success);   \
-        if(!success)    \
-            return; \
-        ua = mvm_pop(vm, &success);   \
-        if(!success)    \
-            return; \
-        ia = MVM_BITCAST(int32_t, ua); \
-        ib = MVM_BITCAST(int32_t, ub); \
-        block \
-        ia = ia binop ib; \
-        ua = MVM_BITCAST(uint32_t, ia); \
-        mvm_push(vm, ua, &success); \
+#define MVM_BINOP_SIGNED(binop, block)                                         \
+    do {                                                                       \
+        ub = mvm_pop(vm, &success);                                            \
+        if(!success)                                                           \
+            return;                                                            \
+        ua = mvm_pop(vm, &success);                                            \
+        if(!success)                                                           \
+            return;                                                            \
+        ia = MVM_BITCAST(int32_t, ua);                                         \
+        ib = MVM_BITCAST(int32_t, ub);                                         \
+        block ia = ia binop ib;                                                \
+        ua = MVM_BITCAST(uint32_t, ia);                                        \
+        mvm_push(vm, ua, &success);                                            \
     } while(0)
 
 void mvm_run(mvm *vm, uint32_t limit) {

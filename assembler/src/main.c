@@ -15,11 +15,11 @@ int main(int argc, char *argv[]) {
         rc = 1;
         goto cleanup;
     }
-    
+
     const char *source_path = argv[1];
     const char *rom_path = argv[2];
 
-    rom = (uint8_t*)malloc(MVM_RAM_SIZE);
+    rom = (uint8_t *)malloc(MVM_RAM_SIZE);
     if(!rom) {
         FATAL("failed to allocate memory");
         rc = 1;
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
         rc = 1;
         goto cleanup;
     }
-    
+
     size_t n = fread(source, source_size, 1, f);
     fclose(f);
     if(n != 1) {
@@ -52,7 +52,6 @@ int main(int argc, char *argv[]) {
         goto cleanup;
     }
     source[source_size] = 0;
-
 
     f = fopen(rom_path, "wb");
     if(!f) {
@@ -69,8 +68,7 @@ int main(int argc, char *argv[]) {
         rc = 1;
 
     fclose(f);
-    
-    
+
 cleanup:
     if(rom)
         free(rom);
@@ -78,4 +76,3 @@ cleanup:
         free(source);
     return rc;
 }
-

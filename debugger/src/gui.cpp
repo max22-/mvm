@@ -32,7 +32,8 @@ void gui_init(int argc, char *argv[]) {
     const long rom_size = ftell(f);
     if(rom_size > MVM_RAM_SIZE) {
         fclose(f);
-        strncpy(load_error, "rom file is too big to fit in ram", sizeof(load_error));
+        strncpy(load_error, "rom file is too big to fit in ram",
+                sizeof(load_error));
         return;
     }
     fseek(f, 0, SEEK_SET);
@@ -52,13 +53,13 @@ void gui_deinit() {
         free(vm.ram);
 }
 
-#define TABLE_ROW(label, format, value) \
-    do { \
-        ImGui::TableNextRow(); \
-        ImGui::TableNextColumn(); \
-        ImGui::Text(label); \
-        ImGui::TableNextColumn(); \
-        ImGui::Text(format, value); \
+#define TABLE_ROW(label, format, value)                                        \
+    do {                                                                       \
+        ImGui::TableNextRow();                                                 \
+        ImGui::TableNextColumn();                                              \
+        ImGui::Text(label);                                                    \
+        ImGui::TableNextColumn();                                              \
+        ImGui::Text(format, value);                                            \
     } while(0)
 
 static void vm_state() {
@@ -68,7 +69,8 @@ static void vm_state() {
         ImGui::End();
         return;
     }
-    const ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
+    const ImGuiTableFlags flags =
+        ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
     if(ImGui::BeginTable("vm state", 2, flags, ImVec2(300, 0))) {
         TABLE_ROW("pc", "0x%08x", vm.pc);
         TABLE_ROW("instruction", "%s", mvm_current_instruction_name(&vm));
@@ -82,10 +84,12 @@ static void vm_state() {
     ImGui::End();
 }
 
-static void stack_display(const char *name, const uint32_t *stk, const uint32_t ptr) {
+static void stack_display(const char *name, const uint32_t *stk,
+                          const uint32_t ptr) {
     const unsigned int n_columns = 8;
     if(ImGui::CollapsingHeader(name, ImGuiTreeNodeFlags_DefaultOpen)) {
-        const ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
+        const ImGuiTableFlags flags =
+            ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
         if(ptr != 0) {
             if(ImGui::BeginTable(name, n_columns, flags)) {
                 ImGui::TableNextRow();
@@ -94,11 +98,10 @@ static void stack_display(const char *name, const uint32_t *stk, const uint32_t 
                     ImGui::Text("0x%x", stk[i]);
                     if((i + 1) % n_columns == 0)
                         ImGui::TableNextRow();
-
                 }
                 for(uint32_t i = ptr; i % n_columns != 0; i++) {
                     ImGui::TableNextColumn();
-                    //ImGui::Text("column %u", i);
+                    // ImGui::Text("column %u", i);
                 }
                 ImGui::EndTable();
             }
@@ -110,18 +113,19 @@ static void ram_display() {
     const unsigned int n_columns = 16;
     const uint32_t bytes_to_display = 256;
     if(ImGui::CollapsingHeader("ram", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
+        const ImGuiTableFlags flags =
+            ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders;
         if(ImGui::BeginTable("ram", n_columns, flags)) {
             ImGui::TableNextRow();
             for(uint32_t i = 0; i < bytes_to_display; i++) {
                 ImGui::TableNextColumn();
                 if(vm.pc == i)
-                    ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "0x%02x", vm.ram[i]);
+                    ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "0x%02x",
+                                       vm.ram[i]);
                 else
                     ImGui::Text("0x%02x", vm.ram[i]);
                 if((i + 1) % n_columns == 0)
                     ImGui::TableNextRow();
-
             }
             ImGui::EndTable();
         }
@@ -129,7 +133,8 @@ static void ram_display() {
 }
 
 static void vm_memory() {
-    if(*load_error) return;
+    if(*load_error)
+        return;
     ImGui::Begin("memory");
     stack_display("stack", vm.stk, vm.sp);
     stack_display("return stack", vm.rstk, vm.rsp);

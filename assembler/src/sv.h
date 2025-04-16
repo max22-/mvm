@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 
-
 typedef struct sv {
     const char *data;
     size_t len;
@@ -28,7 +27,6 @@ uint32_t sv_u32_hex(sv s, int *success);
 // Tries to parse a decimal number from `s`. Sets `success` accordingly.
 uint32_t sv_u32_dec(sv s, int *success);
 
-
 #ifdef SV_IMPLEMENTATION
 
 sv sv_from_cstr(const char *cstr) {
@@ -41,7 +39,8 @@ sv sv_from_cstr(const char *cstr) {
 }
 
 void sv_to_cstr(sv s, char *buf, size_t buf_size) {
-    if(buf_size == 0) return;
+    if(buf_size == 0)
+        return;
     size_t i;
     for(i = 0; i < s.len && i < buf_size - 1; i++)
         buf[i] = s.data[i];
@@ -74,7 +73,8 @@ sv sv_skipspace(sv s) {
 }
 
 int sv_eq(sv s1, sv s2) {
-    if(s1.len != s2.len) return 0;
+    if(s1.len != s2.len)
+        return 0;
     for(size_t i = 0; i < s1.len; i++) {
         if(s1.data[i] != s2.data[i])
             return 0;
@@ -110,7 +110,8 @@ sv sv_chop_tok(sv s) {
 }
 
 int sv_starts_with(sv s, sv prefix) {
-    if(prefix.len > s.len) return 0;
+    if(prefix.len > s.len)
+        return 0;
     for(size_t i = 0; i < prefix.len; i++) {
         if(s.data[i] != prefix.data[i])
             return 0;
@@ -155,4 +156,4 @@ uint32_t sv_u32_dec(sv s, int *success) {
 }
 
 #endif /* SV_IMPLEMENTATION */
-#endif  /* SV_H */
+#endif /* SV_H */

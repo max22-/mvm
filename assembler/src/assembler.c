@@ -25,7 +25,8 @@ typedef struct assembler {
     uint8_t pass_number;
 } assembler;
 
-static assembler assembler_new(const char *file_name, const char *source, uint8_t *rom, size_t rom_capacity) {
+static assembler assembler_new(const char *file_name, const char *source,
+                               uint8_t *rom, size_t rom_capacity) {
     assembler a = {
         .pc = 0,
         .pc_max = 0,
@@ -53,18 +54,21 @@ void assembler_error(assembler *a, const char *err_msg) {
             column++;
         }
     }
-    fprintf(stderr, "%s:%lu:%lu: error: %s\n", a->file_name, line, column, err_msg);
+    fprintf(stderr, "%s:%lu:%lu: error: %s\n", a->file_name, line, column,
+            err_msg);
 }
 
 static void set_pc(assembler *a, uint32_t pc) {
-    if(!a->success) return;
+    if(!a->success)
+        return;
     a->pc = pc;
     if(a->pc_max < pc)
         a->pc_max = pc;
 }
 
 static void emit8(assembler *a, uint8_t b) {
-    if(!a->success) return;
+    if(!a->success)
+        return;
     if(a->pc > a->rom_capacity - sizeof(uint8_t)) {
         assembler_error(a, "trying to write code after rom limit");
         return;
@@ -74,7 +78,8 @@ static void emit8(assembler *a, uint8_t b) {
 }
 
 static void emit16(assembler *a, uint16_t h) {
-    if(!a->success) return;
+    if(!a->success)
+        return;
     if(a->pc > a->rom_capacity - sizeof(uint16_t)) {
         assembler_error(a, "trying to write code after rom limit");
         return;
@@ -84,7 +89,8 @@ static void emit16(assembler *a, uint16_t h) {
 }
 
 static void emit32(assembler *a, uint32_t w) {
-    if(!a->success) return;
+    if(!a->success)
+        return;
     if(a->pc > a->rom_capacity - sizeof(uint32_t)) {
         assembler_error(a, "trying to write code after rom limit");
         return;
@@ -184,7 +190,7 @@ void make_label(assembler *a, sv tok) {
         tok = sv_chop_left(tok, 1);
         if(tok.len == 0)
             assembler_error(a, "invalid label");
-        
+
         a->labels[a->label_counter].name = tok;
         a->labels[a->label_counter].addr = a->pc;
         a->label_counter++;
@@ -215,7 +221,8 @@ void push_label(assembler *a, sv name) {
         assembler_error(a, "label not found");
         return;
     }
-    emit8(a, OP_PUSH32); // we have to do a PUSH32 because we don't know the size of the address in the first pass
+    emit8(a, OP_PUSH32); // we have to do a PUSH32 because we don't know the
+                         // size of the address in the first pass
     emit32(a, addr);
     a->s = sv_chop_tok(a->s);
 }
@@ -240,9 +247,10 @@ void assembler_pass(assembler *a) {
     }
 }
 
-ssize_t assemble(const char *file_name, const char *source, uint8_t *rom, size_t rom_capacity) {
+ssize_t assemble(const char *file_name, const char *source, uint8_t *rom,
+                 size_t rom_capacity) {
     assembler a = assembler_new(file_name, source, rom, rom_capacity);
-    
+
     assembler_pass(&a);
     if(!a.success)
         return -1;
