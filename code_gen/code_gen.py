@@ -7,6 +7,13 @@ instructions = [
     "sub",
     "mul",
     "div",
+    "divu",
+    "eq",
+    "neq",
+    "lt",
+    "gte",
+    "ltu",
+    "gteu",
 ]
 
 status = [

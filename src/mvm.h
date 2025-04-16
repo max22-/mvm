@@ -20,6 +20,13 @@ enum MVM_OPCODE {
     OP_SUB,
     OP_MUL,
     OP_DIV,
+    OP_DIVU,
+    OP_EQ,
+    OP_NEQ,
+    OP_LT,
+    OP_GTE,
+    OP_LTU,
+    OP_GTEU,
     MVM_OPCODE_COUNT,
 };
 
@@ -66,6 +73,13 @@ const char *mvm_op_name[] = {
     "sub",
     "mul",
     "div",
+    "divu",
+    "eq",
+    "neq",
+    "lt",
+    "gte",
+    "ltu",
+    "gteu",
 };
 
 const char *mvm_status_name[] = {
@@ -133,7 +147,7 @@ void mvm_push(mvm *vm, uint32_t x, uint8_t *success) {
     *success = 1;
 }
 
-uint32_t mvm_pop(mvm *vm, uint32_t x, uint8_t *success) {
+uint32_t mvm_pop(mvm *vm, uint8_t *success) {
     if(vm->sp == 0) {
         *success = 0;
         vm->status = MVM_STACK_UNDERFLOW;
@@ -143,23 +157,51 @@ uint32_t mvm_pop(mvm *vm, uint32_t x, uint8_t *success) {
     return vm->stk[--vm->sp];
 }
 
-#define MVM_BINOP_CHECKED(binop, check) \
+#define MVM_BINOP_CHECKED(binop, type_prefix, type, check) \
     do { \
-        b = mvm_pop(vm, b, &success);   \
+        type_prefix##b = MVM_BITCAST(type, mvm_pop(vm, &success));   \
         if(!success)    \
             return; \
-        a = mvm_pop(vm, b, &success);   \
+        type_prefix##a = MVM_BITCAST(type, mvm_pop(vm, &success));   \
         if(!success)    \
             return; \
         check \
-        mvm_push(vm, a binop b, &success); \
+        type_prefix##c = type_prefix##a binop type_prefix##b; \
+        mvm_push(vm, MVM_BITCAST(uint32_t, type_prefix##c), &success); \
     } while(0)
 
-#define MVM_BINOP(binop) MVM_BINOP_CHECKED(binop, /* dummy arg */)
+#define MVM_BINOP_UNSIGNED(binop, block) \
+    do { \
+        ub = mvm_pop(vm, &success);   \
+        if(!success)    \
+            return; \
+        ua = mvm_pop(vm, &success);   \
+        if(!success)    \
+            return; \
+        block \
+        mvm_push(vm, ua binop ub, &success); \
+    } while(0)
+
+#define MVM_BINOP_SIGNED(binop, block) \
+    do { \
+        ub = mvm_pop(vm, &success);   \
+        if(!success)    \
+            return; \
+        ua = mvm_pop(vm, &success);   \
+        if(!success)    \
+            return; \
+        ia = MVM_BITCAST(int32_t, ua); \
+        ib = MVM_BITCAST(int32_t, ub); \
+        block \
+        ia = ia binop ib; \
+        ua = MVM_BITCAST(uint32_t, ia); \
+        mvm_push(vm, ua, &success); \
+    } while(0)
 
 void mvm_run(mvm *vm, uint32_t limit) {
     uint8_t success;
-    uint32_t a, b;
+    uint32_t ua, ub;
+    int32_t ia, ib;
     while(limit-- && vm->status == MVM_RUNNING) {
         uint8_t op = mvm_load_u8(vm, vm->pc++, &success);
         if(!success)
@@ -169,42 +211,68 @@ void mvm_run(mvm *vm, uint32_t limit) {
             vm->status = MVM_HALTED;
             break;
         case OP_PUSH_U8:
-            a = mvm_load_u8(vm, vm->pc, &success);
+            ua = mvm_load_u8(vm, vm->pc, &success);
             if(!success)
                 return;
-            vm->pc++;
-            mvm_push(vm, a, &success);
+            vm->pc += sizeof(uint8_t);
+            mvm_push(vm, ua, &success);
             break;
         case OP_PUSH_U16:
-            a = mvm_load_u16(vm, vm->pc, &success);
+            ua = mvm_load_u16(vm, vm->pc, &success);
             if(!success)
                 return;
-            vm->pc += 2;
-            mvm_push(vm, a, &success);
+            vm->pc += sizeof(uint16_t);
+            mvm_push(vm, ua, &success);
             break;
         case OP_PUSH32:
-            a = mvm_load32(vm, vm->pc, &success);
+            ua = mvm_load32(vm, vm->pc, &success);
             if(!success)
                 return;
-            vm->pc += 4;
-            mvm_push(vm, a, &success);
+            vm->pc += sizeof(uint32_t);
+            mvm_push(vm, ua, &success);
             break;
         case OP_ADD:
-            MVM_BINOP(+);
+            MVM_BINOP_UNSIGNED(+, {});
             break;
         case OP_SUB:
-            MVM_BINOP(-);
+            MVM_BINOP_UNSIGNED(-, {});
             break;
         case OP_MUL:
-            MVM_BINOP(*);
+            MVM_BINOP_UNSIGNED(*, {});
             break;
         case OP_DIV:
-            MVM_BINOP_CHECKED(/,
-                if(b == 0) {
+            MVM_BINOP_SIGNED(/, {
+                if(ib == 0) {
                     vm->status = MVM_DIVISION_BY_ZERO;
                     return;
                 }
-            );
+            });
+            break;
+        case OP_DIVU:
+            MVM_BINOP_UNSIGNED(/, {
+                if(ub == 0) {
+                    vm->status = MVM_DIVISION_BY_ZERO;
+                    return;
+                }
+            });
+            break;
+        case OP_EQ:
+            MVM_BINOP_UNSIGNED(==, {});
+            break;
+        case OP_NEQ:
+            MVM_BINOP_UNSIGNED(!=, {});
+            break;
+        case OP_LT:
+            MVM_BINOP_SIGNED(<, {});
+            break;
+        case OP_GTE:
+            MVM_BINOP_SIGNED(>=, {});
+            break;
+        case OP_LTU:
+            MVM_BINOP_UNSIGNED(<, {});
+            break;
+        case OP_GTEU:
+            MVM_BINOP_UNSIGNED(>=, {});
             break;
         default:
             vm->status = MVM_INVALID_INSTRUCTION;
