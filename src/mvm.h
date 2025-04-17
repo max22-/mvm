@@ -196,6 +196,36 @@ int32_t mvm_load_i32(mvm *vm, uint32_t addr, uint8_t *success) {
     return MVM_BITCAST(int32_t, vm->ram[addr]);
 }
 
+void mvm_store_8(mvm *vm, uint32_t addr, uint8_t value, uint8_t *success) {
+    if(addr > MVM_RAM_SIZE - sizeof(uint8_t)) {
+        vm->status = MVM_SEGMENTATION_FAULT;
+        *success = 0;
+        return;
+    }
+    *success = 1;
+    MVM_BITCAST(uint8_t, vm->ram[addr]) = value;
+}
+
+void mvm_store_16(mvm *vm, uint32_t addr, uint16_t value, uint8_t *success) {
+    if(addr > MVM_RAM_SIZE - sizeof(uint16_t)) {
+        vm->status = MVM_SEGMENTATION_FAULT;
+        *success = 0;
+        return;
+    }
+    *success = 1;
+    MVM_BITCAST(uint16_t, vm->ram[addr]) = value;
+}
+
+void mvm_store_32(mvm *vm, uint32_t addr, uint32_t value, uint8_t *success) {
+    if(addr > MVM_RAM_SIZE - sizeof(uint32_t)) {
+        vm->status = MVM_SEGMENTATION_FAULT;
+        *success = 0;
+        return;
+    }
+    *success = 1;
+    MVM_BITCAST(uint32_t, vm->ram[addr]) = value;
+}
+
 
 // Generated load/store end
 
@@ -352,6 +382,51 @@ void mvm_run(mvm *vm, uint32_t limit) {
             break;
         case OP_GTEU:
             MVM_BINOP_UNSIGNED(>=, {});
+            break;
+        case OP_LB:
+            ua = mvm_pop(vm, &success);
+            if(!success)
+                return;
+            ia = mvm_load_i8(vm, ua, &success);
+            if(!success)
+                return;
+            mvm_push(vm, MVM_BITCAST(uint32_t, ia), &success);
+            break;
+        case OP_LH:
+            ua = mvm_pop(vm, &success);
+            if(!success)
+                return;
+            ia = mvm_load_i16(vm, ua, &success);
+            if(!success)
+                return;
+            mvm_push(vm, MVM_BITCAST(uint32_t, ia), &success);
+            break;
+        case OP_LW:
+            ua = mvm_pop(vm, &success);
+            if(!success)
+                return;
+            ua = mvm_load_u32(vm, ua, &success);
+            if(!success)
+                return;
+            mvm_push(vm, ua, &success);
+            break;
+        case OP_LBU:
+            ua = mvm_pop(vm, &success);
+            if(!success)
+                return;
+            ua = mvm_load_u8(vm, ua, &success);
+            if(!success)
+                return;
+            mvm_push(vm, ua, &success);
+            break;
+        case OP_LHU:
+            ua = mvm_pop(vm, &success);
+            if(!success)
+                return;
+            ua = mvm_load_u16(vm, ua, &success);
+            if(!success)
+                return;
+            mvm_push(vm, ua, &success);
             break;
         case OP_JMP:
             ua = mvm_pop(vm, &success);

@@ -114,6 +114,18 @@ class LoadStoreGenerator(Generator):
                 self.emit("}")
                 self.emit("")
 
+            for s in [8, 16, 32]:
+                self.emit(f"void mvm_store_{s}(mvm *vm, uint32_t addr, uint{s}_t value, uint8_t *success) {{")
+                self.emit(f"    if(addr > MVM_RAM_SIZE - sizeof(uint{s}_t)) {{")
+                self.emit("        vm->status = MVM_SEGMENTATION_FAULT;")
+                self.emit("        *success = 0;")
+                self.emit("        return;")
+                self.emit("    }")
+                self.emit("    *success = 1;")
+                self.emit(f"    MVM_BITCAST(uint{s}_t, vm->ram[addr]) = value;")
+                self.emit("}")
+                self.emit("")
+
 
 
 with open("src/mvm.h", "r") as f:
