@@ -16,6 +16,8 @@ static uint8_t *ram = nullptr;
 static char load_error[1024] = {0};
 static bool gui_is_init = false;
 
+bool run = false;
+
 GLuint fb_texture;
 uint16_t *frame_buffer = nullptr;
 bool dirty = false;
@@ -148,8 +150,14 @@ static void vm_state() {
         TABLE_ROW("status", "%s", mvm_status_name[vm.status]);
         ImGui::EndTable();
     }
+    if(run) 
+        ImGui::BeginDisabled();
     if(ImGui::Button("step"))
         mvm_run(&vm, 1);
+    if(run) 
+        ImGui::EndDisabled();
+    ImGui::SameLine();
+    ImGui::Checkbox("run", &run);
     ImGui::End();
 }
 
@@ -225,7 +233,7 @@ static void vm_screen() {
 }
 
 void gui() {
-    if(!*load_error)
+    if(!*load_error && run)
         mvm_run(&vm, 1000000);
     vm_state();
     vm_memory();
