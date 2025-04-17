@@ -17,6 +17,7 @@ enum MVM_OPCODE {
     OP_PUSH_U16,
     OP_PUSH32,
     OP_DUP,
+    OP_POP,
     OP_ADD,
     OP_SUB,
     OP_MUL,
@@ -37,6 +38,7 @@ enum MVM_OPCODE {
     OP_SH,
     OP_SW,
     OP_JMP,
+    OP_CJMP,
     OP_CALL,
     OP_RET,
     MVM_OPCODE_COUNT,
@@ -81,6 +83,7 @@ const char *mvm_op_name[] = {
     "push_u16",
     "push32",
     "dup",
+    "pop",
     "add",
     "sub",
     "mul",
@@ -101,6 +104,7 @@ const char *mvm_op_name[] = {
     "sh",
     "sw",
     "jmp",
+    "cjmp",
     "call",
     "ret",
 };
@@ -303,6 +307,9 @@ void mvm_run(mvm *vm, uint32_t limit) {
                 return;
             mvm_push(vm, ua, &success);
             break;
+        case OP_POP:
+            mvm_pop(vm, &success);
+            break;
         case OP_ADD:
             MVM_BINOP_UNSIGNED(+, {});
             break;
@@ -352,6 +359,16 @@ void mvm_run(mvm *vm, uint32_t limit) {
                 return;
             vm->pc = ua;
             break;
+        case OP_CJMP:
+            ub = mvm_pop(vm, &success);
+            if(!success)
+                return;
+            ua = mvm_pop(vm, &success);
+            if(!success)
+                return;
+            if(ua)
+                vm->pc = ub;
+            break;
         case OP_CALL:
             ua = mvm_pop(vm, &success);
             if(!success)
@@ -359,6 +376,7 @@ void mvm_run(mvm *vm, uint32_t limit) {
             mvm_rpush(vm, vm->pc, &success);
             vm->pc = ua;
             break;
+
         case OP_RET:
             ua = mvm_rpop(vm, &success);
             if(!success)

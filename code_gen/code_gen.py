@@ -4,6 +4,7 @@ instructions = [
     "push_u16",
     "push32",
     "dup",
+    "pop",
     "add",
     "sub",
     "mul",
@@ -24,6 +25,7 @@ instructions = [
     "sh",
     "sw",
     "jmp",
+    "cjmp",
     "call",
     "ret",
 ]
