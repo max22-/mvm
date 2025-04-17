@@ -28,6 +28,14 @@ enum MVM_OPCODE {
     OP_GTE,
     OP_LTU,
     OP_GTEU,
+    OP_LB,
+    OP_LH,
+    OP_LW,
+    OP_LBU,
+    OP_LHU,
+    OP_SB,
+    OP_SH,
+    OP_SW,
     OP_JMP,
     OP_CALL,
     OP_RET,
@@ -84,6 +92,14 @@ const char *mvm_op_name[] = {
     "gte",
     "ltu",
     "gteu",
+    "lb",
+    "lh",
+    "lw",
+    "lbu",
+    "lhu",
+    "sb",
+    "sh",
+    "sw",
     "jmp",
     "call",
     "ret",
@@ -114,6 +130,8 @@ void mvm_init(mvm *vm, uint8_t *ram) {
 
 #define MVM_BITCAST(t, x) (*(t *)(&(x)))
 
+// Generated load/store start
+
 uint32_t mvm_load_u8(mvm *vm, uint32_t addr, uint8_t *success) {
     if(addr > MVM_RAM_SIZE - sizeof(uint8_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
@@ -121,7 +139,7 @@ uint32_t mvm_load_u8(mvm *vm, uint32_t addr, uint8_t *success) {
         return 0;
     }
     *success = 1;
-    return vm->ram[addr];
+    return MVM_BITCAST(uint8_t, vm->ram[addr]);
 }
 
 uint32_t mvm_load_u16(mvm *vm, uint32_t addr, uint8_t *success) {
@@ -134,7 +152,7 @@ uint32_t mvm_load_u16(mvm *vm, uint32_t addr, uint8_t *success) {
     return MVM_BITCAST(uint16_t, vm->ram[addr]);
 }
 
-uint32_t mvm_load32(mvm *vm, uint32_t addr, uint8_t *success) {
+uint32_t mvm_load_u32(mvm *vm, uint32_t addr, uint8_t *success) {
     if(addr > MVM_RAM_SIZE - sizeof(uint32_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
         *success = 0;
@@ -143,6 +161,39 @@ uint32_t mvm_load32(mvm *vm, uint32_t addr, uint8_t *success) {
     *success = 1;
     return MVM_BITCAST(uint32_t, vm->ram[addr]);
 }
+
+int32_t mvm_load_i8(mvm *vm, uint32_t addr, uint8_t *success) {
+    if(addr > MVM_RAM_SIZE - sizeof(int8_t)) {
+        vm->status = MVM_SEGMENTATION_FAULT;
+        *success = 0;
+        return 0;
+    }
+    *success = 1;
+    return MVM_BITCAST(int8_t, vm->ram[addr]);
+}
+
+int32_t mvm_load_i16(mvm *vm, uint32_t addr, uint8_t *success) {
+    if(addr > MVM_RAM_SIZE - sizeof(int16_t)) {
+        vm->status = MVM_SEGMENTATION_FAULT;
+        *success = 0;
+        return 0;
+    }
+    *success = 1;
+    return MVM_BITCAST(int16_t, vm->ram[addr]);
+}
+
+int32_t mvm_load_i32(mvm *vm, uint32_t addr, uint8_t *success) {
+    if(addr > MVM_RAM_SIZE - sizeof(int32_t)) {
+        vm->status = MVM_SEGMENTATION_FAULT;
+        *success = 0;
+        return 0;
+    }
+    *success = 1;
+    return MVM_BITCAST(int32_t, vm->ram[addr]);
+}
+
+
+// Generated load/store end
 
 void mvm_push(mvm *vm, uint32_t x, uint8_t *success) {
     if(vm->sp >= MVM_ARRAYSIZE(vm->stk)) {
@@ -237,7 +288,7 @@ void mvm_run(mvm *vm, uint32_t limit) {
             mvm_push(vm, ua, &success);
             break;
         case OP_PUSH32:
-            ua = mvm_load32(vm, vm->pc, &success);
+            ua = mvm_load_u32(vm, vm->pc, &success);
             if(!success)
                 return;
             vm->pc += sizeof(uint32_t);
