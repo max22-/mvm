@@ -123,10 +123,10 @@ const char *mvm_status_name[] = {
 
 // Generated strings arrays end
 
-#define MVM_CHECK() \
-    do { \
-        if(vm->status != MVM_RUNNING) \
-            return; \
+#define MVM_CHECK()                                                            \
+    do {                                                                       \
+        if(vm->status != MVM_RUNNING)                                          \
+            return;                                                            \
     } while(0)
 
 #define MVM_ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
