@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <imgui.h>
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+#include <SDL_opengles2.h>
+#else
+#include <SDL_opengl.h>
+#endif
 #define MVM_IMPLEMENTATION
 #include <mvm.h>
 #include "gui.h"
@@ -10,6 +15,9 @@ static mvm vm;
 static uint8_t *ram = nullptr;
 static char load_error[1024] = {0};
 static bool gui_is_init = false;
+
+GLuint fb_texture;
+uint16_t *frame_buffer = nullptr;
 
 void gui_init(int argc, char *argv[]) {
     if(argc != 2) {
@@ -45,12 +53,30 @@ void gui_init(int argc, char *argv[]) {
     }
 
     mvm_init(&vm, ram);
+
+    frame_buffer = (uint16_t*)malloc(FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * sizeof(uint16_t));
+    if(!frame_buffer) {
+        free(ram);
+        ram = nullptr;
+        strncpy(load_error, "failed to allocate memory for the frame buffer", sizeof(load_error));
+        return;
+    }
+
+    glGenTextures(1, &fb_texture);
+    glBindTexture(GL_TEXTURE_2D, fb_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, nullptr);
+
+
     gui_is_init = true;
 }
 
 void gui_deinit() {
     if(ram)
         free(vm.ram);
+    if(gui_is_init)
+        glDeleteTextures(1, &fb_texture);
 }
 
 #define TABLE_ROW(label, format, value)                                        \
@@ -142,7 +168,16 @@ static void vm_memory() {
     ImGui::End();
 }
 
+static void vm_screen() {
+    if(*load_error)
+        return;
+    ImGui::Begin("Screen");
+    ImGui::Image((ImTextureID)fb_texture, ImVec2(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT));
+    ImGui::End();
+}
+
 void gui() {
     vm_state();
     vm_memory();
+    vm_screen();
 }
