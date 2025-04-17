@@ -103,25 +103,21 @@ class LoadStoreGenerator(Generator):
             for t in types:
                 sign, size = t
                 type_name = f"{type_map[sign]}{size}_t"
-                self.emit(f"{type_map[sign]}32_t mvm_load_{sign}{size}(mvm *vm, uint32_t addr, uint8_t *success) {{")
+                self.emit(f"{type_map[sign]}32_t mvm_load_{sign}{size}(mvm *vm, uint32_t addr) {{")
                 self.emit(f"    if(addr > MVM_RAM_SIZE - sizeof({type_name})) {{")
                 self.emit("        vm->status = MVM_SEGMENTATION_FAULT;")
-                self.emit("        *success = 0;")
                 self.emit("        return 0;")
                 self.emit("    }")
-                self.emit("    *success = 1;")
                 self.emit(f"    return MVM_BITCAST({type_name}, vm->ram[addr]);")
                 self.emit("}")
                 self.emit("")
 
             for s in [8, 16, 32]:
-                self.emit(f"void mvm_store_{s}(mvm *vm, uint32_t addr, uint{s}_t value, uint8_t *success) {{")
+                self.emit(f"void mvm_store_{s}(mvm *vm, uint32_t addr, uint{s}_t value) {{")
                 self.emit(f"    if(addr > MVM_RAM_SIZE - sizeof(uint{s}_t)) {{")
                 self.emit("        vm->status = MVM_SEGMENTATION_FAULT;")
-                self.emit("        *success = 0;")
                 self.emit("        return;")
                 self.emit("    }")
-                self.emit("    *success = 1;")
                 self.emit(f"    MVM_BITCAST(uint{s}_t, vm->ram[addr]) = value;")
                 self.emit("}")
                 self.emit("")

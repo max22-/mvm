@@ -123,6 +123,12 @@ const char *mvm_status_name[] = {
 
 // Generated strings arrays end
 
+#define MVM_CHECK() \
+    do { \
+        if(vm->status != MVM_RUNNING) \
+            return; \
+    } while(0)
+
 #define MVM_ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 void mvm_init(mvm *vm, uint8_t *ram) {
@@ -136,209 +142,172 @@ void mvm_init(mvm *vm, uint8_t *ram) {
 
 // Generated load/store start
 
-uint32_t mvm_load_u8(mvm *vm, uint32_t addr, uint8_t *success) {
+uint32_t mvm_load_u8(mvm *vm, uint32_t addr) {
     if(addr > MVM_RAM_SIZE - sizeof(uint8_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
-        *success = 0;
         return 0;
     }
-    *success = 1;
     return MVM_BITCAST(uint8_t, vm->ram[addr]);
 }
 
-uint32_t mvm_load_u16(mvm *vm, uint32_t addr, uint8_t *success) {
+uint32_t mvm_load_u16(mvm *vm, uint32_t addr) {
     if(addr > MVM_RAM_SIZE - sizeof(uint16_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
-        *success = 0;
         return 0;
     }
-    *success = 1;
     return MVM_BITCAST(uint16_t, vm->ram[addr]);
 }
 
-uint32_t mvm_load_u32(mvm *vm, uint32_t addr, uint8_t *success) {
+uint32_t mvm_load_u32(mvm *vm, uint32_t addr) {
     if(addr > MVM_RAM_SIZE - sizeof(uint32_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
-        *success = 0;
         return 0;
     }
-    *success = 1;
     return MVM_BITCAST(uint32_t, vm->ram[addr]);
 }
 
-int32_t mvm_load_i8(mvm *vm, uint32_t addr, uint8_t *success) {
+int32_t mvm_load_i8(mvm *vm, uint32_t addr) {
     if(addr > MVM_RAM_SIZE - sizeof(int8_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
-        *success = 0;
         return 0;
     }
-    *success = 1;
     return MVM_BITCAST(int8_t, vm->ram[addr]);
 }
 
-int32_t mvm_load_i16(mvm *vm, uint32_t addr, uint8_t *success) {
+int32_t mvm_load_i16(mvm *vm, uint32_t addr) {
     if(addr > MVM_RAM_SIZE - sizeof(int16_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
-        *success = 0;
         return 0;
     }
-    *success = 1;
     return MVM_BITCAST(int16_t, vm->ram[addr]);
 }
 
-int32_t mvm_load_i32(mvm *vm, uint32_t addr, uint8_t *success) {
+int32_t mvm_load_i32(mvm *vm, uint32_t addr) {
     if(addr > MVM_RAM_SIZE - sizeof(int32_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
-        *success = 0;
         return 0;
     }
-    *success = 1;
     return MVM_BITCAST(int32_t, vm->ram[addr]);
 }
 
-void mvm_store_8(mvm *vm, uint32_t addr, uint8_t value, uint8_t *success) {
+void mvm_store_8(mvm *vm, uint32_t addr, uint8_t value) {
     if(addr > MVM_RAM_SIZE - sizeof(uint8_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
-        *success = 0;
         return;
     }
-    *success = 1;
     MVM_BITCAST(uint8_t, vm->ram[addr]) = value;
 }
 
-void mvm_store_16(mvm *vm, uint32_t addr, uint16_t value, uint8_t *success) {
+void mvm_store_16(mvm *vm, uint32_t addr, uint16_t value) {
     if(addr > MVM_RAM_SIZE - sizeof(uint16_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
-        *success = 0;
         return;
     }
-    *success = 1;
     MVM_BITCAST(uint16_t, vm->ram[addr]) = value;
 }
 
-void mvm_store_32(mvm *vm, uint32_t addr, uint32_t value, uint8_t *success) {
+void mvm_store_32(mvm *vm, uint32_t addr, uint32_t value) {
     if(addr > MVM_RAM_SIZE - sizeof(uint32_t)) {
         vm->status = MVM_SEGMENTATION_FAULT;
-        *success = 0;
         return;
     }
-    *success = 1;
     MVM_BITCAST(uint32_t, vm->ram[addr]) = value;
 }
 
 
 // Generated load/store end
 
-void mvm_push(mvm *vm, uint32_t x, uint8_t *success) {
+void mvm_push(mvm *vm, uint32_t x) {
     if(vm->sp >= MVM_ARRAYSIZE(vm->stk)) {
-        *success = 0;
         vm->status = MVM_STACK_OVERFLOW;
         return;
     }
     vm->stk[vm->sp++] = x;
-    *success = 1;
 }
 
-uint32_t mvm_pop(mvm *vm, uint8_t *success) {
+uint32_t mvm_pop(mvm *vm) {
     if(vm->sp == 0) {
-        *success = 0;
         vm->status = MVM_STACK_UNDERFLOW;
         return 0;
     }
-    *success = 1;
     return vm->stk[--vm->sp];
 }
 
-void mvm_rpush(mvm *vm, uint32_t x, uint8_t *success) {
+void mvm_rpush(mvm *vm, uint32_t x) {
     if(vm->rsp >= MVM_ARRAYSIZE(vm->rstk)) {
-        *success = 0;
         vm->status = MVM_RETURN_STACK_OVERFLOW;
         return;
     }
     vm->rstk[vm->rsp++] = x;
-    *success = 1;
 }
 
-uint32_t mvm_rpop(mvm *vm, uint8_t *success) {
+uint32_t mvm_rpop(mvm *vm) {
     if(vm->rsp == 0) {
-        *success = 0;
         vm->status = MVM_RETURN_STACK_UNDERFLOW;
         return 0;
     }
-    *success = 1;
     return vm->rstk[--vm->rsp];
 }
 
 #define MVM_BINOP_UNSIGNED(binop, block)                                       \
     do {                                                                       \
-        ub = mvm_pop(vm, &success);                                            \
-        if(!success)                                                           \
-            return;                                                            \
-        ua = mvm_pop(vm, &success);                                            \
-        if(!success)                                                           \
-            return;                                                            \
-        block mvm_push(vm, ua binop ub, &success);                             \
+        ub = mvm_pop(vm);                                                      \
+        MVM_CHECK();                                                           \
+        ua = mvm_pop(vm);                                                      \
+        MVM_CHECK();                                                           \
+        block mvm_push(vm, ua binop ub);                                       \
     } while(0)
 
 #define MVM_BINOP_SIGNED(binop, block)                                         \
     do {                                                                       \
-        ub = mvm_pop(vm, &success);                                            \
-        if(!success)                                                           \
-            return;                                                            \
-        ua = mvm_pop(vm, &success);                                            \
-        if(!success)                                                           \
-            return;                                                            \
+        ub = mvm_pop(vm);                                                      \
+        MVM_CHECK();                                                           \
+        ua = mvm_pop(vm);                                                      \
+        MVM_CHECK();                                                           \
         ia = MVM_BITCAST(int32_t, ua);                                         \
         ib = MVM_BITCAST(int32_t, ub);                                         \
         block ia = ia binop ib;                                                \
         ua = MVM_BITCAST(uint32_t, ia);                                        \
-        mvm_push(vm, ua, &success);                                            \
+        mvm_push(vm, ua);                                                      \
     } while(0)
 
 void mvm_run(mvm *vm, uint32_t limit) {
-    uint8_t success;
     uint32_t ua, ub;
     int32_t ia, ib;
     while(limit-- && vm->status == MVM_RUNNING) {
-        uint8_t op = mvm_load_u8(vm, vm->pc++, &success);
-        if(!success)
-            return;
+        uint8_t op = mvm_load_u8(vm, vm->pc++);
+        MVM_CHECK();
         switch(op) {
         case OP_BRK:
             vm->status = MVM_HALTED;
             break;
         case OP_PUSH_U8:
-            ua = mvm_load_u8(vm, vm->pc, &success);
-            if(!success)
-                return;
+            ua = mvm_load_u8(vm, vm->pc);
+            MVM_CHECK();
             vm->pc += sizeof(uint8_t);
-            mvm_push(vm, ua, &success);
+            mvm_push(vm, ua);
             break;
         case OP_PUSH_U16:
-            ua = mvm_load_u16(vm, vm->pc, &success);
-            if(!success)
-                return;
+            ua = mvm_load_u16(vm, vm->pc);
+            MVM_CHECK();
             vm->pc += sizeof(uint16_t);
-            mvm_push(vm, ua, &success);
+            mvm_push(vm, ua);
             break;
         case OP_PUSH32:
-            ua = mvm_load_u32(vm, vm->pc, &success);
-            if(!success)
-                return;
+            ua = mvm_load_u32(vm, vm->pc);
+            MVM_CHECK();
             vm->pc += sizeof(uint32_t);
-            mvm_push(vm, ua, &success);
+            mvm_push(vm, ua);
             break;
         case OP_DUP:
-            ua = mvm_pop(vm, &success);
-            if(!success)
-                return;
-            mvm_push(vm, ua, &success);
-            if(!success)
-                return;
-            mvm_push(vm, ua, &success);
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            mvm_push(vm, ua);
+            MVM_CHECK();
+            mvm_push(vm, ua);
             break;
         case OP_POP:
-            mvm_pop(vm, &success);
+            mvm_pop(vm);
             break;
         case OP_ADD:
             MVM_BINOP_UNSIGNED(+, {});
@@ -384,78 +353,63 @@ void mvm_run(mvm *vm, uint32_t limit) {
             MVM_BINOP_UNSIGNED(>=, {});
             break;
         case OP_LB:
-            ua = mvm_pop(vm, &success);
-            if(!success)
-                return;
-            ia = mvm_load_i8(vm, ua, &success);
-            if(!success)
-                return;
-            mvm_push(vm, MVM_BITCAST(uint32_t, ia), &success);
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            ia = mvm_load_i8(vm, ua);
+            MVM_CHECK();
+            mvm_push(vm, MVM_BITCAST(uint32_t, ia));
             break;
         case OP_LH:
-            ua = mvm_pop(vm, &success);
-            if(!success)
-                return;
-            ia = mvm_load_i16(vm, ua, &success);
-            if(!success)
-                return;
-            mvm_push(vm, MVM_BITCAST(uint32_t, ia), &success);
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            ia = mvm_load_i16(vm, ua);
+            MVM_CHECK();
+            mvm_push(vm, MVM_BITCAST(uint32_t, ia));
             break;
         case OP_LW:
-            ua = mvm_pop(vm, &success);
-            if(!success)
-                return;
-            ua = mvm_load_u32(vm, ua, &success);
-            if(!success)
-                return;
-            mvm_push(vm, ua, &success);
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            ua = mvm_load_u32(vm, ua);
+            MVM_CHECK();
+            mvm_push(vm, ua);
             break;
         case OP_LBU:
-            ua = mvm_pop(vm, &success);
-            if(!success)
-                return;
-            ua = mvm_load_u8(vm, ua, &success);
-            if(!success)
-                return;
-            mvm_push(vm, ua, &success);
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            ua = mvm_load_u8(vm, ua);
+            MVM_CHECK();
+            mvm_push(vm, ua);
             break;
         case OP_LHU:
-            ua = mvm_pop(vm, &success);
-            if(!success)
-                return;
-            ua = mvm_load_u16(vm, ua, &success);
-            if(!success)
-                return;
-            mvm_push(vm, ua, &success);
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            ua = mvm_load_u16(vm, ua);
+            MVM_CHECK();
+            mvm_push(vm, ua);
             break;
         case OP_JMP:
-            ua = mvm_pop(vm, &success);
-            if(!success)
-                return;
+            ua = mvm_pop(vm);
+            MVM_CHECK();
             vm->pc = ua;
             break;
         case OP_CJMP:
-            ub = mvm_pop(vm, &success);
-            if(!success)
-                return;
-            ua = mvm_pop(vm, &success);
-            if(!success)
-                return;
+            ub = mvm_pop(vm);
+            MVM_CHECK();
+            ua = mvm_pop(vm);
+            MVM_CHECK();
             if(ua)
                 vm->pc = ub;
             break;
         case OP_CALL:
-            ua = mvm_pop(vm, &success);
-            if(!success)
-                return;
-            mvm_rpush(vm, vm->pc, &success);
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            mvm_rpush(vm, vm->pc);
             vm->pc = ua;
             break;
 
         case OP_RET:
-            ua = mvm_rpop(vm, &success);
-            if(!success)
-                return;
+            ua = mvm_rpop(vm);
+            MVM_CHECK();
             vm->pc = ua;
             break;
         default:
