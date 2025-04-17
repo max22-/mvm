@@ -17,6 +17,7 @@ enum MVM_OPCODE {
     OP_PUSH_U16,
     OP_PUSH32,
     OP_DUP,
+    OP_OVR,
     OP_POP,
     OP_ADD,
     OP_SUB,
@@ -41,6 +42,8 @@ enum MVM_OPCODE {
     OP_CJMP,
     OP_CALL,
     OP_RET,
+    OP_IN,
+    OP_OUT,
     MVM_OPCODE_COUNT,
 };
 
@@ -71,6 +74,16 @@ int mvm_opcode_from_name(const char *name);
 const char *mvm_current_instruction_name(mvm *vm);
 void mvm_dump(mvm *vm);
 
+// user provided functions
+extern uint32_t port_in(uint32_t port);
+extern void port_out(uint32_t port, uint32_t value);
+extern uint32_t mmio_read8(mvm *vm, uint32_t addr);
+extern uint32_t mmio_read16(mvm *vm, uint32_t addr);
+extern uint32_t mmio_read32(mvm *vm, uint32_t addr);
+extern void mmio_write8(mvm *vm, uint32_t addr, uint8_t value);
+extern void mmio_write16(mvm *vm, uint32_t addr, uint16_t value);
+extern void mmio_write32(mvm *vm, uint32_t addr, uint32_t value);
+
 #ifdef MVM_IMPLEMENTATION
 
 #include <string.h>
@@ -83,6 +96,7 @@ const char *mvm_op_name[] = {
     "push_u16",
     "push32",
     "dup",
+    "ovr",
     "pop",
     "add",
     "sub",
@@ -107,6 +121,8 @@ const char *mvm_op_name[] = {
     "cjmp",
     "call",
     "ret",
+    "in",
+    "out",
 };
 
 const char *mvm_status_name[] = {
@@ -143,75 +159,66 @@ void mvm_init(mvm *vm, uint8_t *ram) {
 // Generated load/store start
 
 uint32_t mvm_load_u8(mvm *vm, uint32_t addr) {
-    if(addr > MVM_RAM_SIZE - sizeof(uint8_t)) {
-        vm->status = MVM_SEGMENTATION_FAULT;
-        return 0;
-    }
-    return MVM_BITCAST(uint8_t, vm->ram[addr]);
+    if(addr <= MVM_RAM_SIZE - sizeof(uint8_t))
+        return MVM_BITCAST(uint8_t, vm->ram[addr]);
+    else
+        return mmio_read8(vm, addr);
 }
 
 uint32_t mvm_load_u16(mvm *vm, uint32_t addr) {
-    if(addr > MVM_RAM_SIZE - sizeof(uint16_t)) {
-        vm->status = MVM_SEGMENTATION_FAULT;
-        return 0;
-    }
-    return MVM_BITCAST(uint16_t, vm->ram[addr]);
+    if(addr <= MVM_RAM_SIZE - sizeof(uint16_t))
+        return MVM_BITCAST(uint16_t, vm->ram[addr]);
+    else
+        return mmio_read16(vm, addr);
 }
 
 uint32_t mvm_load_u32(mvm *vm, uint32_t addr) {
-    if(addr > MVM_RAM_SIZE - sizeof(uint32_t)) {
-        vm->status = MVM_SEGMENTATION_FAULT;
-        return 0;
-    }
-    return MVM_BITCAST(uint32_t, vm->ram[addr]);
+    if(addr <= MVM_RAM_SIZE - sizeof(uint32_t))
+        return MVM_BITCAST(uint32_t, vm->ram[addr]);
+    else
+        return mmio_read32(vm, addr);
 }
 
 int32_t mvm_load_i8(mvm *vm, uint32_t addr) {
-    if(addr > MVM_RAM_SIZE - sizeof(int8_t)) {
-        vm->status = MVM_SEGMENTATION_FAULT;
-        return 0;
-    }
-    return MVM_BITCAST(int8_t, vm->ram[addr]);
+    if(addr <= MVM_RAM_SIZE - sizeof(int8_t))
+        return MVM_BITCAST(int8_t, vm->ram[addr]);
+    else
+        return mmio_read8(vm, addr);
 }
 
 int32_t mvm_load_i16(mvm *vm, uint32_t addr) {
-    if(addr > MVM_RAM_SIZE - sizeof(int16_t)) {
-        vm->status = MVM_SEGMENTATION_FAULT;
-        return 0;
-    }
-    return MVM_BITCAST(int16_t, vm->ram[addr]);
+    if(addr <= MVM_RAM_SIZE - sizeof(int16_t))
+        return MVM_BITCAST(int16_t, vm->ram[addr]);
+    else
+        return mmio_read16(vm, addr);
 }
 
 int32_t mvm_load_i32(mvm *vm, uint32_t addr) {
-    if(addr > MVM_RAM_SIZE - sizeof(int32_t)) {
-        vm->status = MVM_SEGMENTATION_FAULT;
-        return 0;
-    }
-    return MVM_BITCAST(int32_t, vm->ram[addr]);
+    if(addr <= MVM_RAM_SIZE - sizeof(int32_t))
+        return MVM_BITCAST(int32_t, vm->ram[addr]);
+    else
+        return mmio_read32(vm, addr);
 }
 
 void mvm_store_8(mvm *vm, uint32_t addr, uint8_t value) {
-    if(addr > MVM_RAM_SIZE - sizeof(uint8_t)) {
-        vm->status = MVM_SEGMENTATION_FAULT;
-        return;
-    }
-    MVM_BITCAST(uint8_t, vm->ram[addr]) = value;
+    if(addr <= MVM_RAM_SIZE - sizeof(uint8_t))
+        MVM_BITCAST(uint8_t, vm->ram[addr]) = value;
+    else
+        mmio_write8(vm, addr, value);
 }
 
 void mvm_store_16(mvm *vm, uint32_t addr, uint16_t value) {
-    if(addr > MVM_RAM_SIZE - sizeof(uint16_t)) {
-        vm->status = MVM_SEGMENTATION_FAULT;
-        return;
-    }
-    MVM_BITCAST(uint16_t, vm->ram[addr]) = value;
+    if(addr <= MVM_RAM_SIZE - sizeof(uint16_t))
+        MVM_BITCAST(uint16_t, vm->ram[addr]) = value;
+    else
+        mmio_write16(vm, addr, value);
 }
 
 void mvm_store_32(mvm *vm, uint32_t addr, uint32_t value) {
-    if(addr > MVM_RAM_SIZE - sizeof(uint32_t)) {
-        vm->status = MVM_SEGMENTATION_FAULT;
-        return;
-    }
-    MVM_BITCAST(uint32_t, vm->ram[addr]) = value;
+    if(addr <= MVM_RAM_SIZE - sizeof(uint32_t))
+        MVM_BITCAST(uint32_t, vm->ram[addr]) = value;
+    else
+        mmio_write32(vm, addr, value);
 }
 
 
@@ -306,6 +313,15 @@ void mvm_run(mvm *vm, uint32_t limit) {
             MVM_CHECK();
             mvm_push(vm, ua);
             break;
+        case OP_OVR:
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            ub = mvm_pop(vm);
+            MVM_CHECK();
+            mvm_push(vm, ub);
+            mvm_push(vm, ua);
+            mvm_push(vm, ub);
+            break;
         case OP_POP:
             mvm_pop(vm);
             break;
@@ -387,6 +403,24 @@ void mvm_run(mvm *vm, uint32_t limit) {
             MVM_CHECK();
             mvm_push(vm, ua);
             break;
+        case OP_SB:
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            ub = mvm_pop(vm);
+            mvm_store_8(vm, ua, ub);
+            break;
+        case OP_SH:
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            ub = mvm_pop(vm);
+            mvm_store_16(vm, ua, ub);
+            break;
+        case OP_SW:
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            ub = mvm_pop(vm);
+            mvm_store_16(vm, ua, ub);
+            break;
         case OP_JMP:
             ua = mvm_pop(vm);
             MVM_CHECK();
@@ -406,11 +440,24 @@ void mvm_run(mvm *vm, uint32_t limit) {
             mvm_rpush(vm, vm->pc);
             vm->pc = ua;
             break;
-
         case OP_RET:
             ua = mvm_rpop(vm);
             MVM_CHECK();
             vm->pc = ua;
+            break;
+        case OP_IN:
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            ua = port_in(ua);
+            MVM_CHECK();
+            mvm_push(vm, ua);
+            break;
+        case OP_OUT:
+            ub = mvm_pop(vm);
+            MVM_CHECK();
+            ua = mvm_pop(vm);
+            MVM_CHECK();
+            port_out(ub, ua);
             break;
         default:
             vm->status = MVM_INVALID_INSTRUCTION;
@@ -457,6 +504,45 @@ void mvm_dump(mvm *vm) {
     }
     printf("\n");
 }
+
+#ifdef MVM_DUMMY_IO_IMPLEMENTATION
+
+uint32_t port_in(uint32_t port) {
+    return 0;
+}
+
+void port_out(uint32_t port, uint32_t value) {
+
+}
+
+uint32_t mmio_read8(mvm *vm, uint32_t addr) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+    return 0;
+}
+
+uint32_t mmio_read16(mvm *vm, uint32_t addr) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+    return 0;
+}
+
+uint32_t mmio_read32(mvm *vm, uint32_t addr) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+    return 0;
+}
+
+void mmio_write8(mvm *vm, uint32_t addr, uint8_t value) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+}
+
+void mmio_write16(mvm *vm, uint32_t addr, uint16_t value) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+}
+
+void mmio_write32(mvm *vm, uint32_t addr, uint32_t value) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+}
+
+#endif
 
 #endif
 #endif

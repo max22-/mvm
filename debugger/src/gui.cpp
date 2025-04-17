@@ -18,6 +18,49 @@ static bool gui_is_init = false;
 
 GLuint fb_texture;
 uint16_t *frame_buffer = nullptr;
+bool dirty = false;
+
+uint32_t port_in(uint32_t port) {
+    return 0;
+}
+
+void port_out(uint32_t port, uint32_t value) {
+    if(port == 0 && value == 1) {
+        dirty = true;
+    }
+}
+
+uint32_t mmio_read8(mvm *vm, uint32_t addr) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+    return 0;
+}
+
+uint32_t mmio_read16(mvm *vm, uint32_t addr) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+    return 0;
+}
+
+uint32_t mmio_read32(mvm *vm, uint32_t addr) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+    return 0;
+}
+
+void mmio_write8(mvm *vm, uint32_t addr, uint8_t value) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+}
+
+void mmio_write16(mvm *vm, uint32_t addr, uint16_t value) {
+    const uint32_t base_fb_addr = 0x80000000;
+    if(addr >= base_fb_addr && addr < base_fb_addr + FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * sizeof(uint16_t)) {
+        frame_buffer[addr - base_fb_addr] = value;
+    } else {
+        vm->status = MVM_SEGMENTATION_FAULT;
+    }
+}
+
+void mmio_write32(mvm *vm, uint32_t addr, uint32_t value) {
+    vm->status = MVM_SEGMENTATION_FAULT;
+}
 
 void gui_init(int argc, char *argv[]) {
     if(argc != 2) {
@@ -54,7 +97,7 @@ void gui_init(int argc, char *argv[]) {
 
     mvm_init(&vm, ram);
 
-    frame_buffer = (uint16_t*)malloc(FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * sizeof(uint16_t));
+    frame_buffer = (uint16_t*)calloc(1, FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT * sizeof(uint16_t));
     if(!frame_buffer) {
         free(ram);
         ram = nullptr;
@@ -171,13 +214,25 @@ static void vm_memory() {
 static void vm_screen() {
     if(*load_error)
         return;
+    if(dirty) {
+        glBindTexture(GL_TEXTURE_2D, fb_texture);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, frame_buffer);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
     ImGui::Begin("Screen");
     ImGui::Image((ImTextureID)fb_texture, ImVec2(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT));
     ImGui::End();
 }
 
 void gui() {
+    if(!*load_error)
+        mvm_run(&vm, 1000000);
     vm_state();
     vm_memory();
     vm_screen();
+
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::Begin("FPS");
+    ImGui::Text("%.1f FPS", io.Framerate);
+    ImGui::End();
 }

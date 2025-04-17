@@ -1,5 +1,6 @@
 #include <stdio.h>
 #define MVM_IMPLEMENTATION
+#define MVM_DUMMY_IO_IMPLEMENTATION
 #include <mvm.h>
 #include "assembler.h"
 #define SV_IMPLEMENTATION
