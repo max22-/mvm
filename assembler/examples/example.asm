@@ -1,15 +1,15 @@
-org $40
+.org $40
 
 push 0
 
 :start
-push $ffff
+,xor_pattern call
 ovr
 ,pixel call
 ,blit call
 
 push 1 add
-dup push 320 push 240 mul gteu ,end cjmp
+dup ,width lw ,height lw mul gteu ,end cjmp
 ,start jmp
 
 :end
@@ -26,3 +26,18 @@ brk
     push 0
     out
     ret
+
+:xor_pattern
+    dup ,width lw remu
+    ovr ,width lw divu
+    xor push 9 remu
+    push 0 eq ,xor_pattern/black cjmp
+    push $ffff
+    ,xor_pattern/end jmp
+    :xor_pattern/black
+    push 0
+    :xor_pattern/end
+    ret
+
+:width .word 320
+:height .word 240

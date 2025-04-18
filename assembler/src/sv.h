@@ -10,8 +10,6 @@ typedef struct sv {
 
 // Returns a string-view from a 0-terminated C string
 sv sv_from_cstr(const char *s);
-// Returns an empty string-view
-sv sv_null();
 // Returns true if the string-view is empty
 int sv_is_empty(sv s);
 // Returns true if s1 and s2 are equal, false otherwise
@@ -47,13 +45,6 @@ void sv_to_cstr(sv s, char *buf, size_t buf_size) {
     buf[i] = 0;
 }
 
-sv sv_null() {
-    sv s;
-    s.data = NULL;
-    s.len = 0;
-    return s;
-}
-
 int sv_is_empty(sv s) {
     return s.len == 0 || s.data == NULL;
 }
@@ -67,8 +58,6 @@ sv sv_skipspace(sv s) {
         s.data++;
         s.len--;
     }
-    if(s.len == 0)
-        s.data = NULL;
     return s;
 }
 
@@ -87,7 +76,7 @@ sv sv_chop_left(sv s, size_t n) {
         s.data += n;
         s.len -= n;
     } else {
-        s = sv_null();
+        s.len = 0;
     }
     return s;
 }
@@ -121,6 +110,10 @@ int sv_starts_with(sv s, sv prefix) {
 
 uint32_t sv_u32_hex(sv s, int *success) {
     uint32_t r = 0;
+    if(s.len == 0) {
+        *success = 0;
+        return 0;
+    }
     for(size_t i = 0; i < s.len; i++) {
         r = r * 16;
         char c = s.data[i];
@@ -141,6 +134,10 @@ uint32_t sv_u32_hex(sv s, int *success) {
 
 uint32_t sv_u32_dec(sv s, int *success) {
     uint32_t r = 0;
+    if(s.len == 0) {
+        *success = 0;
+        return 0;
+    }
     for(size_t i = 0; i < s.len; i++) {
         r = r * 10;
         char c = s.data[i];

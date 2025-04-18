@@ -126,6 +126,7 @@ uint32_t sv_int(sv s, int *success) {
             result = MVM_BITCAST(uint32_t, signed_result);
         }
     }
+    *success = 1;
     return result;
 }
 
@@ -228,13 +229,42 @@ void push_label(assembler *a, sv name) {
     a->s = sv_chop_tok(a->s);
 }
 
+void raw_words(assembler *a) {
+    int success;
+    int i = 0;
+    while(1) {
+        if(!a->success)
+            return;
+        if(i != 0) {
+            a->s = sv_skipspace(a->s);
+            sv tok = sv_tok(a->s);
+            if(!sv_eq(tok, sv_from_cstr(",")))
+                return;
+            a->s = sv_chop_tok(a->s);
+        }
+        a->s = sv_skipspace(a->s);
+        sv tok = sv_tok(a->s);
+        uint32_t w = sv_int(tok, &success);
+        if(!success) {
+            assembler_error(a, "expected number");
+            return;
+        }
+        emit32(a, w);
+        a->s = sv_chop_tok(a->s);
+        i++;
+    }
+}
+
 void assembler_pass(assembler *a) {
     while(!sv_is_empty(a->s) && a->success) {
         a->s = sv_skipspace(a->s);
         sv tok = sv_tok(a->s);
-        if(sv_eq(tok, sv_from_cstr("org"))) {
+        if(sv_eq(tok, sv_from_cstr(".org"))) {
             a->s = sv_chop_tok(a->s);
             org(a);
+        } else if(sv_eq(tok, sv_from_cstr(".word"))) {
+            a->s = sv_chop_tok(a->s);
+            raw_words(a);
         } else if(sv_eq(tok, sv_from_cstr("push"))) {
             a->s = sv_chop_tok(a->s);
             push_instruction(a);

@@ -24,6 +24,9 @@ enum MVM_OPCODE {
     OP_MUL,
     OP_DIV,
     OP_DIVU,
+    OP_REM,
+    OP_REMU,
+    OP_XOR,
     OP_EQ,
     OP_NEQ,
     OP_LT,
@@ -103,6 +106,9 @@ const char *mvm_op_name[] = {
     "mul",
     "div",
     "divu",
+    "rem",
+    "remu",
+    "xor",
     "eq",
     "neq",
     "lt",
@@ -349,6 +355,25 @@ void mvm_run(mvm *vm, uint32_t limit) {
                     return;
                 }
             });
+            break;
+        case OP_REM:
+            MVM_BINOP_SIGNED(%, {
+                if(ib == 0) {
+                    vm->status = MVM_DIVISION_BY_ZERO;
+                    return;
+                }
+            });
+            break;
+        case OP_REMU:
+            MVM_BINOP_UNSIGNED(%, {
+                if(ub == 0) {
+                    vm->status = MVM_DIVISION_BY_ZERO;
+                    return;
+                }
+            });
+            break;
+        case OP_XOR:
+            MVM_BINOP_UNSIGNED(^, {});
             break;
         case OP_EQ:
             MVM_BINOP_UNSIGNED(==, {});
