@@ -13,6 +13,7 @@ dup ,width lw ,height lw mul gteu ,end cjmp
 ,start jmp
 
 :end
+pop
 brk
 
 :pixel
@@ -22,9 +23,8 @@ brk
     ret
 
 :blit
-    push 1
     push 0
-    out
+    sys
     ret
 
 :xor_pattern

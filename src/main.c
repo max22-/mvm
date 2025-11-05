@@ -8,14 +8,8 @@
 #define FRAMEBUFFER_WIDTH 320
 #define FRAMEBUFFER_HEIGHT 240
 
-uint32_t port_in(uint32_t port) {
-    return 0;
-}
+void syscall(mvm *vm) {
 
-void port_out(uint32_t port, uint32_t value) {
-    if(port == 0 && value == 1) {
-        // blit the frame buffer
-    }
 }
 
 uint32_t mmio_read8(mvm *vm, uint32_t addr) {

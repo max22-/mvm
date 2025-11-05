@@ -32,8 +32,7 @@ instructions = [
     "cjmp",
     "call",
     "ret",
-    "in",
-    "out",
+    "sys"
 ]
 
 status = [

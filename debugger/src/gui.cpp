@@ -22,13 +22,13 @@ GLuint fb_texture;
 uint16_t *frame_buffer = nullptr;
 bool dirty = false;
 
-uint32_t port_in(uint32_t port) {
-    return 0;
-}
-
-void port_out(uint32_t port, uint32_t value) {
-    if(port == 0 && value == 1) {
+void syscall(mvm *vm) {
+    uint32_t syscall_num = mvm_pop(vm);
+    MVM_CHECK();
+    switch(syscall_num) {
+    case 0:
         dirty = true;
+        break;
     }
 }
 

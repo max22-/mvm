@@ -45,8 +45,7 @@ enum MVM_OPCODE {
     OP_CJMP,
     OP_CALL,
     OP_RET,
-    OP_IN,
-    OP_OUT,
+    OP_SYS,
     MVM_OPCODE_COUNT,
 };
 
@@ -78,8 +77,7 @@ const char *mvm_current_instruction_name(mvm *vm);
 void mvm_dump(mvm *vm);
 
 // user provided functions
-extern uint32_t port_in(uint32_t port);
-extern void port_out(uint32_t port, uint32_t value);
+extern void syscall(mvm *vm);
 extern uint32_t mmio_read8(mvm *vm, uint32_t addr);
 extern uint32_t mmio_read16(mvm *vm, uint32_t addr);
 extern uint32_t mmio_read32(mvm *vm, uint32_t addr);
@@ -127,8 +125,7 @@ const char *mvm_op_name[] = {
     "cjmp",
     "call",
     "ret",
-    "in",
-    "out",
+    "sys",
 };
 
 const char *mvm_status_name[] = {
@@ -470,19 +467,8 @@ void mvm_run(mvm *vm, uint32_t limit) {
             MVM_CHECK();
             vm->pc = ua;
             break;
-        case OP_IN:
-            ua = mvm_pop(vm);
-            MVM_CHECK();
-            ua = port_in(ua);
-            MVM_CHECK();
-            mvm_push(vm, ua);
-            break;
-        case OP_OUT:
-            ub = mvm_pop(vm);
-            MVM_CHECK();
-            ua = mvm_pop(vm);
-            MVM_CHECK();
-            port_out(ub, ua);
+        case OP_SYS:
+            syscall(vm);
             break;
         default:
             vm->status = MVM_INVALID_INSTRUCTION;
@@ -531,14 +517,6 @@ void mvm_dump(mvm *vm) {
 }
 
 #ifdef MVM_DUMMY_IO_IMPLEMENTATION
-
-uint32_t port_in(uint32_t port) {
-    return 0;
-}
-
-void port_out(uint32_t port, uint32_t value) {
-
-}
 
 uint32_t mmio_read8(mvm *vm, uint32_t addr) {
     vm->status = MVM_SEGMENTATION_FAULT;
